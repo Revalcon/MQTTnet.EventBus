@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.421
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MQTTnet.EventBus", "MQTTnet.EventBus\MQTTnet.EventBus.csproj", "{A15343A8-28BA-4183-9298-EECDBF4F62EA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A15343A8-28BA-4183-9298-EECDBF4F62EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A15343A8-28BA-4183-9298-EECDBF4F62EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A15343A8-28BA-4183-9298-EECDBF4F62EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A15343A8-28BA-4183-9298-EECDBF4F62EA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {57EA32AA-7D49-45F1-9E15-93EC6C026DCB}
+	EndGlobalSection
+EndGlobal
