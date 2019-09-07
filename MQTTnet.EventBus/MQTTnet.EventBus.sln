@@ -9,6 +9,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Demos", "Demos", "{F52DDA8C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MQTTnet.EventBus.Publisher_ConsoleApp", "MQTTnet.EventBus.Publisher_ConsoleApp\MQTTnet.EventBus.Publisher_ConsoleApp.csproj", "{15015D5B-7873-4A27-9748-CD6BB5F59F53}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MQTTnet.EventBus.Listener_ConsoleApp", "MQTTnet.EventBus.Listener_ConsoleApp\MQTTnet.EventBus.Listener_ConsoleApp.csproj", "{9D4D3550-7A1E-4823-B42E-7D67222A2CC9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,12 +25,17 @@ Global
 		{15015D5B-7873-4A27-9748-CD6BB5F59F53}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{15015D5B-7873-4A27-9748-CD6BB5F59F53}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{15015D5B-7873-4A27-9748-CD6BB5F59F53}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9D4D3550-7A1E-4823-B42E-7D67222A2CC9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9D4D3550-7A1E-4823-B42E-7D67222A2CC9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9D4D3550-7A1E-4823-B42E-7D67222A2CC9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9D4D3550-7A1E-4823-B42E-7D67222A2CC9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{15015D5B-7873-4A27-9748-CD6BB5F59F53} = {F52DDA8C-ED4F-452A-94D4-20996A59F6EE}
+		{9D4D3550-7A1E-4823-B42E-7D67222A2CC9} = {F52DDA8C-ED4F-452A-94D4-20996A59F6EE}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {57EA32AA-7D49-45F1-9E15-93EC6C026DCB}

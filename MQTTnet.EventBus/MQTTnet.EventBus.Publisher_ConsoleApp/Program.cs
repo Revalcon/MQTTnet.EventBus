@@ -12,16 +12,13 @@ namespace MQTTnet.EventBus.Publisher_ConsoleApp
 
         private static async Task MainAsync()
         {
+            Console.Title = "Publisher";
+
             var mqttClient = new MqttFactory().CreateMqttClient();
 
-            //var options = new MqttClientOptionsBuilder()
-            //    .WithTcpServer(server, 1883) // Port is optional
-            //    .Build();
             var options = new MqttClientOptionsBuilder()
                 .WithClientId("Console_App_Publisher")
                 .WithTcpServer("{Ip Address}", 1883)
-                //.WithTcpServer("m11.cloudmqtt.com", 14177)
-                //.WithCredentials("node1", "123456")
                 .Build();
 
             mqttClient.UseDisconnectedHandler(async e =>
