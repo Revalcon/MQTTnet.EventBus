@@ -99,7 +99,9 @@ namespace MQTTnet.EventBus
                         var concreteType = typeof(IIntegrationEventHandler<>).MakeGenericType(eventType);
 
                         await Task.Yield();
-                        await (Task)concreteType.GetMethod("Handle").Invoke(handler, new object[] { eventArgs });
+                        await (Task)concreteType
+                            .GetMethod(nameof(IIntegrationEventHandler.Handle))
+                            .Invoke(handler, new object[] { eventArgs });
                     }
                 }
             }
