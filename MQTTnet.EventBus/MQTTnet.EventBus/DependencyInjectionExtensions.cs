@@ -20,12 +20,12 @@ namespace MQTTnet.EventBus
         {
             services.AddSingleton<IEventBus, MqttEventBus>(sp =>
             {
-                var rabbitMQPersistentConnection = sp.GetRequiredService<IMqttPersisterConnection>();
+                var mqttPersistentConnection = sp.GetRequiredService<IMqttPersisterConnection>();
                 var iLifetimeScope = sp.GetRequiredService<IServiceScopeFactory>();
                 var logger = sp.GetRequiredService<ILogger<MqttEventBus>>();
                 var eventBusSubcriptionsManager = sp.GetRequiredService<IEventBusSubscriptionsManager>();
 
-                return new MqttEventBus(rabbitMQPersistentConnection, logger, iLifetimeScope, eventBusSubcriptionsManager, retryCount);
+                return new MqttEventBus(mqttPersistentConnection, logger, iLifetimeScope, eventBusSubcriptionsManager, retryCount);
             });
             services.AddSingleton<IMqttPersisterConnection, DefaultMqttPersisterConnection>(sp =>
             {
