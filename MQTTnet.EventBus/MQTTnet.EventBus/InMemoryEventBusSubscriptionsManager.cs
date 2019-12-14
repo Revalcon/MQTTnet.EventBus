@@ -75,6 +75,8 @@ namespace MQTTnet.EventBus
         }
         public IEnumerable<SubscriptionInfo> GetHandlersForEvent(string topic) => _handlers[topic];
 
+        public IEnumerable<string> AllTopics() => _handlers.Select(p => p.Key);
+
         private void RaiseOnEventRemoved(string eventName)
         {
             var handler = OnEventRemoved;

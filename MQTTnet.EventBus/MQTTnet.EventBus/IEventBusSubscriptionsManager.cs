@@ -15,5 +15,6 @@ namespace MQTTnet.EventBus
         Type GetEventType();
         void Clear();
         IEnumerable<SubscriptionInfo> GetHandlersForEvent(string eventName);
+        IEnumerable<string> AllTopics();
     }
 }
