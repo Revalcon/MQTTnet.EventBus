@@ -6,12 +6,12 @@
     <Company>ArtNix LLC</Company>
     <Copyright>@ 2019 ARTNIX LLC</Copyright>
     <PackageLicenseUrl>https://github.com/arttonoyan/MQTTnet.EventBus/blob/master/LICENSE</PackageLicenseUrl>
-    <PackageProjectUrl>https://github.com/arttonoyan/MQTTnet.EventBus/</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/arttonoyan/MQTTnet.EventBus/</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/Revalcon/MQTTnet.EventBus</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Revalcon/MQTTnet.EventBus</RepositoryUrl>
     <PackageTags>Mqtt MqttNet EventBus Event MQ</PackageTags>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <Version>1.0.1</Version>
+    <Version>1.2.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
