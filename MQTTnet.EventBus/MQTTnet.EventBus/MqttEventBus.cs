@@ -9,6 +9,8 @@ using MQTTnet.Protocol;
 using Polly;
 using Polly.Retry;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
@@ -135,10 +137,28 @@ namespace MQTTnet.EventBus
                 }
 
                 _subsManager.AddSubscription<TH>(topic);
-                return _mqttClient.SubscribeAsync(topic, MqttQualityOfServiceLevel.AtLeastOnce);
+                return _mqttClient.SubscribeAsync(topic);
             }
 
             return Task.Factory.StartNew(() => new MqttClientSubscribeResult());
+        }
+
+        public async Task<List<MqttClientSubscribeResult>> ReSubscribeAllTopicsAsync()
+        {
+            var topics = _subsManager.AllTopics().ToList();
+            var results = new List<MqttClientSubscribeResult>(topics.Count);
+            foreach (string topic in _subsManager.AllTopics())
+            {
+                if (!_persistentConnection.IsConnected)
+                {
+                    _persistentConnection.TryConnect();
+                }
+
+                var res = await _mqttClient.SubscribeAsync(topic);
+                results.Add(res);
+            }
+
+            return results;
         }
 
         public Task<MqttClientUnsubscribeResult> UnsubscribeAsync<TH>(string topic) 

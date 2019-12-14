@@ -1,6 +1,7 @@
 ﻿using MQTTnet.Client.Publishing;
 using MQTTnet.Client.Subscribing;
 using MQTTnet.Client.Unsubscribing;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace MQTTnet.EventBus
@@ -12,5 +13,6 @@ namespace MQTTnet.EventBus
             where TH : IIntegrationEventHandler;
         Task<MqttClientUnsubscribeResult> UnsubscribeAsync<TH>(string topic)
             where TH : IIntegrationEventHandler;
+        Task<List<MqttClientSubscribeResult>> ReSubscribeAllTopicsAsync();
     }
 }
