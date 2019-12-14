@@ -18,6 +18,18 @@ public void ConfigureServices(IServiceCollection services)
             .WithTcpServer("{Ip Address}", port: 1883);
 
     }, retryCount);
-    services.AddTransient<IntegrationEventHandler>();
+    services.AddTransient<MyEventHandler>();
+}
+```
+A EventHandler is a class that may handle one or more message types. Each message type is defined by the IIntegrationEventHandler<in T> interface, where T is the MqttApplicationMessageReceivedEventArgs.
+    
+```csharp
+public class MyEventHandler : IIntegrationEventHandler
+{
+    public Task Handle(MqttApplicationMessageReceivedEventArgs args)
+    {
+        //Some action...
+        return Task.CompletedTask;
+    }
 }
 ```
