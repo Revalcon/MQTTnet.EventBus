@@ -21,7 +21,7 @@ public void ConfigureServices(IServiceCollection services)
     services.AddTransient<MyEventHandler>();
 }
 ```
-A EventHandler is a class that may handle one or more message types. Each message type is defined by the IIntegrationEventHandler<in T> interface, where T is the MqttApplicationMessageReceivedEventArgs.
+An EventHandler is a class that may handle one or more message types. Each message type is defined by the IIntegrationEventHandler<in T> interface, where T is the MqttApplicationMessageReceivedEventArgs.
     
 ```csharp
 public class MyEventHandler : IIntegrationEventHandler
@@ -33,3 +33,31 @@ public class MyEventHandler : IIntegrationEventHandler
     }
 }
 ```
+Then in your application add this extension
+```csharp
+public static class ApplicationBuilderExtansions
+{
+    public static IApplicationBuilder UseEventBus(this IApplicationBuilder app, Action<IEventBus> action)
+    {
+        var eventBus = app.ApplicationServices.GetRequiredService<IEventBus>();
+        action.Invoke(eventBus);
+        return app;
+    }
+}
+```
+and use it in your Startup.cs file
+```csharp
+public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+{
+    //...
+
+    app.UseEventBus(async bus => 
+    {
+        await bus.SubscribeAsync<IntegrationEventHandler>("MyTopic1");
+    });
+}
+```
+### Injected interfaces
+* IEventBus
+* IMqttPersisterConnection
+* IEventBusSubscriptionsManager
