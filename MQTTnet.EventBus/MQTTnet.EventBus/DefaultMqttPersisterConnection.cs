@@ -26,11 +26,19 @@ namespace MQTTnet.EventBus
             _options = mqttClientOptions;
             _logger = logger;
             _retryCount = retryCount;
-            _client = new MqttFactory().CreateMqttClient();
+            _client = CreareMqttClient();
         }
 
         public bool IsConnected => _client != null && _client.IsConnected;
         public IMqttClient GetClient() => _client;
+
+        private IMqttClient CreareMqttClient()
+        {
+            var client = new MqttFactory().CreateMqttClient();
+            client.UseDisconnectedHandler(e => OnDisconnected(e));
+            _logger.LogInformation($"Mqtt Client acquired a persistent connection to '{_options.ClientId}' and is subscribed to failure events");
+            return client;
+        }
 
         public bool TryConnect()
         {
@@ -39,26 +47,27 @@ namespace MQTTnet.EventBus
             lock (_syncObject)
             {
                 var policy = RetryPolicy.Handle<SocketException>()
-                    .Or<MqttCommunicationException>()
+                    .Or<MqttProtocolViolationException>()
                     .WaitAndRetry(_retryCount, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), (ex, time) =>
                     {
-                        _logger.LogWarning(ex, "Mqtt Client could not connect after {TimeOut}s ({ExceptionMessage})", $"{time.TotalSeconds:n1}", ex.Message);
+                        _logger.LogWarning(ex, $"Mqtt Client could not connect after {time.TotalSeconds:n1}s ({ex.Message})");
                     }
                 );
-                
-                policy.Execute(() => _client.ConnectAsync(_options)).GetAwaiter().GetResult();
 
-                if (IsConnected)
-                {
-                    _client.UseDisconnectedHandler(e => OnDisconnected(e));
-                    _logger.LogInformation($"Mqtt Client acquired a persistent connection to '{_options.ClientId}' and is subscribed to failure events");
-                    return true;
-                }
-                else
-                {
-                    _logger.LogCritical("FATAL ERROR: Mqtt Client connections could not be created and opened");
-                    return false;
-                }
+                policy.Execute(() => _client.ConnectAsync(_options)).GetAwaiter().GetResult();
+                return IsConnected;
+
+                //if (IsConnected)
+                //{
+                //    _client.UseDisconnectedHandler(e => OnDisconnected(e));
+                //    _logger.LogInformation($"Mqtt Client acquired a persistent connection to '{_options.ClientId}' and is subscribed to failure events");
+                //    return true;
+                //}
+                //else
+                //{
+                //    _logger.LogCritical("FATAL ERROR: Mqtt Client connections could not be created and opened");
+                //    return false;
+                //}
             }
         }
 
