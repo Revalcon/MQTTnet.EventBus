@@ -3,7 +3,7 @@
 [![Nuget](https://img.shields.io/nuget/v/MQTTnet.EventBus.svg)](https://www.nuget.org/packages/MQTTnet.EventBus/)
 [![Nuget](https://img.shields.io/nuget/dt/MQTTnet.EventBus.svg)](https://www.nuget.org/packages/MQTTnet.EventBus/)
 
-## Quickstart
+## Quick Start
 In your ASP.NET Core Startup.cs file add the following
 ``` csharp
 public void ConfigureServices(IServiceCollection services)
