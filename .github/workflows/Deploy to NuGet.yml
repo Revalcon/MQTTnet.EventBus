@@ -1,4 +1,4 @@
-name: "Deploy to NuGet"
+name: "CI"
 
 on:
   workflow_dispatch:
