@@ -9,7 +9,7 @@ on:
         default: '1.0.0'
 
 env:
-  PROJECT_PATH: 'MQTTnet.EventBus.sln'
+  PROJECT_PATH: 'MQTTnet.EventBus/MQTTnet.EventBus/MQTTnet.EventBus.sln'
   PACKAGE_OUTPUT_DIRECTORY: ${{ github.workspace }}\output
   NUGET_SOURCE_URL: 'https://api.nuget.org/v3/index.json'
 
