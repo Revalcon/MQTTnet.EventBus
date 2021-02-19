@@ -17,6 +17,10 @@ jobs:
   deploy:
     name: 'Deploy'
     runs-on: 'windows-latest'
+    strategy:
+      matrix:
+        dotnet: [ '3.1.x', '5.0' ]
+        
     steps:
     - name: 'Checkout'
       uses: actions/checkout@v2
@@ -24,7 +28,7 @@ jobs:
     - name: 'Install dotnet'
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: '3.1.x'
+        dotnet-version: ${{ matrix.dotnet }}
 
     - name: 'Restore packages'
       run: dotnet restore ${{ env.PROJECT_PATH }}
