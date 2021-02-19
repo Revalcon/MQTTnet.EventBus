@@ -1,0 +1,45 @@
+name: "Deploy to NuGet"
+
+on:
+  workflow_dispatch:
+    inputs:
+      packageVersion:
+        description: 'Nuget package version'     
+        required: true
+        default: '1.0.0'
+
+env:
+  PROJECT_PATH: 'MQTTnet.EventBus/MQTTnet.EventBus.sln'
+  PACKAGE_OUTPUT_DIRECTORY: ${{ github.workspace }}\output
+  NUGET_SOURCE_URL: 'https://api.nuget.org/v3/index.json'
+
+jobs:
+  deploy:
+    name: 'Deploy'
+    runs-on: 'windows-latest'
+    steps:
+    - name: 'Checkout'
+      uses: actions/checkout@v2
+
+    - name: 'Install dotnet'
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '3.1.x'
+
+    - name: 'Restore packages'
+      run: dotnet restore ${{ env.PROJECT_PATH }}
+
+    - name: 'Build project'
+      run: dotnet build ${{ env.PROJECT_PATH }} --no-restore --configuration Release
+
+    - name: 'Pack project MQTTnet.EventBus'
+      run: dotnet pack 'MQTTnet.EventBus/MQTTnet.EventBus/MQTTnet.EventBus.csproj' --no-restore --no-build --configuration Release -p:PackageVersion=${{ github.event.inputs.packageVersion }} --output ${{ env.PACKAGE_OUTPUT_DIRECTORY }}"
+      
+    - name: Archive NuGet Package MQTTnet.EventBus
+      uses: actions/upload-artifact@v1
+      with:
+        name: Pack GitActionsTestApp
+        path: ${{ env.PACKAGE_OUTPUT_DIRECTORY }}/
+
+    - name: Push to NuGet
+      run: dotnet nuget push ${{ env.PACKAGE_OUTPUT_DIRECTORY }}/MQTTnet.EventBus.${{ github.event.inputs.packageVersion }}.nupkg --api-key ${{ secrets.NUGET_AUTH_TOKEN }} --source ${{ env.NUGET_SOURCE_URL }}
