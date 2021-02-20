@@ -9,7 +9,7 @@ on:
         default: '1.0.0'
 
 env:
-  PROJECT_PATH: 'MQTTnet.EventBus/MQTTnet.EventBus.sln'
+  PROJECT_PATH: 'MQTTnet.EventBus.sln'
   PACKAGE_OUTPUT_DIRECTORY: ${{ github.workspace }}\output
   NUGET_SOURCE_URL: 'https://api.nuget.org/v3/index.json'
 
@@ -34,7 +34,7 @@ jobs:
       run: dotnet build ${{ env.PROJECT_PATH }} --no-restore --configuration Release
 
     - name: 'Pack project MQTTnet.EventBus'
-      run: dotnet pack 'MQTTnet.EventBus/MQTTnet.EventBus/MQTTnet.EventBus.csproj' --no-restore --no-build --configuration Release -p:PackageVersion=${{ github.event.inputs.packageVersion }} --output ${{ env.PACKAGE_OUTPUT_DIRECTORY }}"
+      run: dotnet pack 'src/MQTTnet.EventBus/MQTTnet.EventBus.csproj' --no-restore --no-build --configuration Release -p:PackageVersion=${{ github.event.inputs.packageVersion }} --output ${{ env.PACKAGE_OUTPUT_DIRECTORY }}"
       
     - name: Archive NuGet Package MQTTnet.EventBus
       uses: actions/upload-artifact@v1
