@@ -1,0 +1,53 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30717.126
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{805378E6-757B-4C68-9EDE-65FBB0CEBECB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{51468033-A31E-4CE9-8C1A-0710C57C6954}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MQTTnet.EventBus", "src\MQTTnet.EventBus\MQTTnet.EventBus.csproj", "{41A36BF7-A37C-4CB7-8FBC-E65A4C770B7F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MQTTnet.EventBus.Publisher_ConsoleApp", "samples\MQTTnet.EventBus.Publisher_ConsoleApp\MQTTnet.EventBus.Publisher_ConsoleApp.csproj", "{8971ED33-C061-40A7-86BB-ABDAFA07D197}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MQTTnet.EventBus.Listener_ConsoleApp", "samples\MQTTnet.EventBus.Listener_ConsoleApp\MQTTnet.EventBus.Listener_ConsoleApp.csproj", "{C495C71F-C868-4BC4-BA18-406178CA6B8B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MQTTnet.EventBus.AspNetCoreApi_Integration", "samples\MQTTnet.EventBus.AspNetCoreApi_Integration\MQTTnet.EventBus.AspNetCoreApi_Integration.csproj", "{0FCC6539-E100-4B2E-AAAE-5884C30F98D4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{41A36BF7-A37C-4CB7-8FBC-E65A4C770B7F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{41A36BF7-A37C-4CB7-8FBC-E65A4C770B7F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{41A36BF7-A37C-4CB7-8FBC-E65A4C770B7F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{41A36BF7-A37C-4CB7-8FBC-E65A4C770B7F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8971ED33-C061-40A7-86BB-ABDAFA07D197}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8971ED33-C061-40A7-86BB-ABDAFA07D197}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8971ED33-C061-40A7-86BB-ABDAFA07D197}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8971ED33-C061-40A7-86BB-ABDAFA07D197}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C495C71F-C868-4BC4-BA18-406178CA6B8B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C495C71F-C868-4BC4-BA18-406178CA6B8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C495C71F-C868-4BC4-BA18-406178CA6B8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C495C71F-C868-4BC4-BA18-406178CA6B8B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0FCC6539-E100-4B2E-AAAE-5884C30F98D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0FCC6539-E100-4B2E-AAAE-5884C30F98D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0FCC6539-E100-4B2E-AAAE-5884C30F98D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0FCC6539-E100-4B2E-AAAE-5884C30F98D4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{41A36BF7-A37C-4CB7-8FBC-E65A4C770B7F} = {805378E6-757B-4C68-9EDE-65FBB0CEBECB}
+		{8971ED33-C061-40A7-86BB-ABDAFA07D197} = {51468033-A31E-4CE9-8C1A-0710C57C6954}
+		{C495C71F-C868-4BC4-BA18-406178CA6B8B} = {51468033-A31E-4CE9-8C1A-0710C57C6954}
+		{0FCC6539-E100-4B2E-AAAE-5884C30F98D4} = {51468033-A31E-4CE9-8C1A-0710C57C6954}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {57EA32AA-7D49-45F1-9E15-93EC6C026DCB}
+	EndGlobalSection
+EndGlobal
