@@ -39,6 +39,7 @@ namespace MQTTnet.EventBus
             _busOptions = busOptions;
             _loggerFactory = loggerFactory;
             _persisterConnections = new Dictionary<string, IMqttPersisterConnection>();
+            _syncObject = new object();
         }
 
         public IMqttPersisterConnection GetOrCreateMqttConnection(string topic)

@@ -27,18 +27,20 @@ namespace MQTTnet.EventBus
 
         public MqttEventBus(
             IEventBusClientProvider eventBusClientProvider,
+            IEventProvider eventProvider,
+            IConsumeMethodInvoker consumeMethodInvoker,
             ILogger<MqttEventBus> logger,
             IServiceScopeFactory scopeFactory,
             ISubscriptionsManager subsManager,
-            IEventProvider eventProvider,
             BusOptions busOptions)
         {
             _eventBusClientProvider = eventBusClientProvider ?? throw new ArgumentNullException(nameof(eventBusClientProvider));
+            _eventProvider = eventProvider;
+            _consumeMethodInvoker = consumeMethodInvoker;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _subsManager = subsManager ?? new InMemorySubscriptionsManager();
             _retryCount = busOptions?.RetryCount ?? 5;
             _scopeFactory = scopeFactory;
-            _eventProvider = eventProvider;
         }
 
         private async void Consumer_Received(MqttApplicationMessageReceivedEventArgs eventArgs)
@@ -80,21 +82,22 @@ namespace MQTTnet.EventBus
 
             if (_subsManager.HasSubscriptionsForEvent(message.Topic))
             {
-                using (var scope = _scopeFactory.CreateScope())
+                var subscriptions = _subsManager.GetSubscriptions(message.Topic);
+                if (subscriptions == null)
+                    throw new Exception("");
+
+                foreach (var subscription in subscriptions)
                 {
-                    var subscriptions = _subsManager.GetHandlersForEvent(message.Topic);
-                    foreach (var subscription in subscriptions)
+                    using (var scope = _scopeFactory.CreateScope())
                     {
                         var consumer = scope.ServiceProvider.GetService(subscription.ConsumerType);
                         if (consumer == null)
                             continue;
 
-                        var eventType = _subsManager.GetEventType();
+                        var converterType = _eventProvider.GetConverterType(subscription.EventName);
+                        var converter = scope.ServiceProvider.GetService(converterType);
                         await Task.Yield();
-                        await _consumeMethodInvoker.InvokeAsync(consumer, eventType, new object[] {
-                        scope.ServiceProvider.GetService(typeof(Serializers.IEventConverter<>).MakeGenericType(eventType)),
-                        message
-                    });
+                        await _consumeMethodInvoker.InvokeAsync(consumer, subscription.EventType, converter, eventArgs);
                     }
                 }
             }
@@ -164,7 +167,7 @@ namespace MQTTnet.EventBus
 
         public Task<MqttClientSubscribeResult[]> ReSubscribeAllTopicsAsync()
         {
-            var aaa = _subsManager.AllTopics().Select(topic => 
+            var aaa = _subsManager.AllTopics().Select(topic =>
             {
                 var connection = _eventBusClientProvider.GetOrCreateMqttConnection(topic);
                 if (!connection.IsConnected)

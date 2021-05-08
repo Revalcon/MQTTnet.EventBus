@@ -5,6 +5,7 @@ namespace MQTTnet.EventBus
 {
     public class SubscriptionInfo
     {
+        public string EventName { get; set; }
         public string Topic { get; set; }
         public Type EventType { get; set; }
         public Type ConsumerType { get; set; }

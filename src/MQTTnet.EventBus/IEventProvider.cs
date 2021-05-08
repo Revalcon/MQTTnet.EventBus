@@ -1,14 +1,16 @@
-﻿using System;
+﻿using MQTTnet.EventBus.Serializers;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace MQTTnet.EventBus
 {
     public interface IEventProvider
     {
+        Type GetConverterType(string eventName);
         Type GetConsumerType(string eventName);
-        object GetConverter(string eventName);
-        MqttApplicationMessage CreateMessage(string eventName, string topic);
+        MqttApplicationMessage CreateMessage(string eventName, object @event, string topic);
     }
 
     public class EventProvider : IEventProvider
@@ -16,31 +18,19 @@ namespace MQTTnet.EventBus
         private readonly IDictionary<string, EventCreater> _eventCreaters;
         private readonly IDictionary<string, EventOptions> _eventOptions;
 
-        public EventProvider() : this(new HashSet<EventOptions>())
+        public EventProvider() : this(null, new HashSet<EventOptions>())
         { }
 
-        public EventProvider(HashSet<EventOptions> eventOptions)
+        public EventProvider(IServiceProvider serviceProvider, HashSet<EventOptions> eventOptions)
         {
-            _eventCreaters = eventOptions.ToDictionary(p => p.EventName, p => EventCreater.New(p));
+            _eventCreaters = eventOptions.ToDictionary(p => p.EventName, p => EventCreater.New(serviceProvider, p));
             _eventOptions = eventOptions.ToDictionary(p => p.EventName);
         }
 
-        public MqttApplicationMessage CreateMessage(string eventName, string topic)
+        public MqttApplicationMessage CreateMessage(string eventName, object @event, string topic)
         {
-            var eventCreater = _eventCreaters[eventName];
-            //var data = (byte[])eventCreater.Converter.Serialize(@event);
-            byte[] data = null;
-
-            var builder = new MqttApplicationMessageBuilder();
-            eventCreater.MessageCreater.Invoke(builder);
-            builder.WithTopic(topic);
-            builder.WithPayload(data);
-
-            return builder.Build();
+            return _eventCreaters[eventName].CreateMqttApplicationMessage(@event, topic);
         }
-
-        public object GetConverter(string eventName)
-            => _eventCreaters[eventName].Converter;
 
         public Type GetConsumerType(string eventName)
         {
@@ -49,38 +39,53 @@ namespace MQTTnet.EventBus
             return null;
         }
 
+        public Type GetConverterType(string eventName)
+            => _eventOptions[eventName].ConverterType;
+
         private class EventCreater
         {
-            public EventCreater(dynamic converter, Action<MqttApplicationMessageBuilder> messageCreater)
+            public EventCreater(IServiceProvider serviceProvider, Type consumerType, Action<MqttApplicationMessageBuilder> messageCreater)
             {
-                Converter = converter;
+                _serializerMethod = consumerType.GetMethod(nameof(IEventSerializer<object>.Serialize));
+                Converter = serviceProvider.GetService(consumerType);
                 MessageCreater = messageCreater;
             }
 
-            public dynamic Converter { get; }
+            private readonly MethodInfo _serializerMethod;
+            public object Converter { get; }
             public Action<MqttApplicationMessageBuilder> MessageCreater { get; }
 
-            public static EventCreater New(EventOptions eventOptions)
+            public byte[] Serialize(object @event)
+                => (byte[])_serializerMethod.Invoke(Converter, new object[] { @event });
+
+            public MqttApplicationMessage CreateMqttApplicationMessage(object @event, string topic)
+            {
+                var data = Serialize(@event);
+
+                var builder = new MqttApplicationMessageBuilder();
+                MessageCreater.Invoke(builder);
+                builder.WithTopic(topic);
+                builder.WithPayload(data);
+
+                return builder.Build();
+            }
+
+            public static EventCreater New(IServiceProvider serviceProvider, EventOptions eventOptions)
             {
                 if(eventOptions.MessageCreater is null)
                     eventOptions.MessageCreater = builder => builder.WithRetainFlag();
 
-                return new EventCreater(Activator.CreateInstance(eventOptions.ConverterType), eventOptions.MessageCreater);
+                return new EventCreater(serviceProvider, eventOptions.ConsumerType, eventOptions.MessageCreater);
             }
         }
     }
 
     public static class IEventProviderExtensions
     {
-        public static Type GetConsumerType(this IEventProvider eventProvider, object @event)
-            => eventProvider.GetConsumerType(@event.GetType().Name);
-        public static object GetConverter(this IEventProvider eventProvider, object @event)
-            => eventProvider.GetConverter(@event.GetType().Name);
+        public static Type GetConsumerType(this IEventProvider eventProvider, Type eventType)
+            => eventProvider.GetConsumerType(eventType.Name);
         public static MqttApplicationMessage CreateMessage(this IEventProvider eventProvider, object @event, string topic)
-            => eventProvider.CreateMessage(@event.GetType().Name, topic);
-
-        public static MqttApplicationMessage CreateMessage<TEvent>(this IEventProvider eventProvider, string topic, TEvent @event)
-            => eventProvider.CreateMessage(topic, @event);
+            => eventProvider.CreateMessage(@event.GetType().Name, @event, topic);
 
         public static Type GetConsumerType<TEvent>(this IEventProvider eventProvider)
             => eventProvider.GetConsumerType(typeof(TEvent));
@@ -89,6 +94,7 @@ namespace MQTTnet.EventBus
             => new SubscriptionInfo
             {
                 Topic = topic,
+                EventName = eventType.Name,
                 EventType = eventType,
                 ConsumerType = eventProvider.GetConsumerType(eventType)
             };

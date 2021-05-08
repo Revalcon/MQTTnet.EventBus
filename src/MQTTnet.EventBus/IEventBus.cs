@@ -16,7 +16,7 @@ namespace MQTTnet.EventBus
     public static class EventBusExtensions
     {
         public static Task<MqttClientPublishResult> PublishAsync<TEvent>(this IEventBus eventBus, TEvent @event, string topic)
-            => eventBus.PublishAsync(StaticCache.EventProvider.CreateMessage(topic, @event));
+            => eventBus.PublishAsync(StaticCache.EventProvider.CreateMessage(@event, topic));
 
         public static Task<MqttClientSubscribeResult> SubscribeAsync<TEvent>(this IEventBus eventBus, string topic)
             => eventBus.SubscribeAsync(StaticCache.EventProvider.CreateSubscriptionInfo<TEvent>(topic));

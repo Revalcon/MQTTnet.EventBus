@@ -24,9 +24,10 @@ namespace Microsoft.Extensions.DependencyInjection
                 services.AddSingleton(o.ConverterType);
             }
 
-            StaticCache.EventProvider = new EventProvider(eventOptions);
-            services.AddSingleton(StaticCache.EventProvider);
-            //services.AddSingleton<IEventProvider>(new EventProvider(eventOptions));
+            services.AddSingleton(p => {
+                StaticCache.EventProvider = new EventProvider(p, eventOptions);
+                return StaticCache.EventProvider;
+            });
             return services.AddMqttEventBus(options, new BusOptions { RetryCount = retryCount });
         }
 
@@ -44,6 +45,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         public static IServiceCollection AddMqttEventBus(this IServiceCollection services, IMqttClientOptions mqttClientOptions, BusOptions busOptions)
             => services
+                .AddLogging()
                 .AddSingleton(busOptions)
                 .AddSingleton(mqttClientOptions)
                 .AddSingleton<IDefaultConverter, DefaultConverter>()

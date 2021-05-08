@@ -21,8 +21,8 @@ namespace MQTTnet.EventBus
     {
         private readonly Lazy<T> _lazyConverter;
 
-        public EventContext(IEventDeserializer<T> deserializer, MqttApplicationMessageReceivedEventArgs message)
-            : this(new Lazy<T>(() => deserializer.Deserialize(message?.ApplicationMessage?.Payload)), message)
+        public EventContext(IEventDeserializer<object> deserializer, MqttApplicationMessageReceivedEventArgs message)
+            : this(new Lazy<T>(() => ((IEventDeserializer<T>)deserializer).Deserialize(message?.ApplicationMessage?.Payload)), message)
         { }
 
         public EventContext(Lazy<T> lazyConverter, MqttApplicationMessageReceivedEventArgs message)

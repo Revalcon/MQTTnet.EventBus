@@ -14,7 +14,7 @@ namespace MQTTnet.EventBus
         //void RemoveSubscription<TConsmer>(string topic)
         //     where TConsmer : IConsumer;
         bool HasSubscriptionsForEvent(string topic);
-        Type GetEventType();
+        HashSet<SubscriptionInfo> GetSubscriptions(string topic);
         void Clear();
         IEnumerable<SubscriptionInfo> GetHandlersForEvent(string eventName);
         IEnumerable<string> AllTopics();

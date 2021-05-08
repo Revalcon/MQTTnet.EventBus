@@ -111,6 +111,11 @@ namespace MQTTnet.EventBus
         }
         public bool HasSubscriptionsForEvent(string topic) => _cache.ContainsKey(topic);
 
-        public Type GetEventType() => typeof(MqttApplicationMessageReceivedEventArgs);
+        public HashSet<SubscriptionInfo> GetSubscriptions(string topic)
+        {
+            if (_cache.TryGetValue(topic, out var options))
+                return options;
+            return null;
+        }
     }
 }
