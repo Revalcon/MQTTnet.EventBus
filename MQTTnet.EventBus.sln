@@ -15,6 +15,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MQTTnet.EventBus.Listener_C
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MQTTnet.EventBus.AspNetCoreApi_Integration", "samples\MQTTnet.EventBus.AspNetCoreApi_Integration\MQTTnet.EventBus.AspNetCoreApi_Integration.csproj", "{0FCC6539-E100-4B2E-AAAE-5884C30F98D4}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{5062D7B6-719C-447C-9306-E5ABEA37EDAE}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MQTTnet.EventBus.Tests", "tests\MQTTnet.EventBus.Tests\MQTTnet.EventBus.Tests.csproj", "{E7DC0041-C144-451D-9D52-B56A453C92D3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MQTTnet.EventBus.ConfigurationApp", "samples\MQTTnet.EventBus.ConfigurationApp\MQTTnet.EventBus.ConfigurationApp.csproj", "{EBE2F498-DC69-40E5-B033-7270ED25C258}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -37,6 +43,14 @@ Global
 		{0FCC6539-E100-4B2E-AAAE-5884C30F98D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0FCC6539-E100-4B2E-AAAE-5884C30F98D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0FCC6539-E100-4B2E-AAAE-5884C30F98D4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E7DC0041-C144-451D-9D52-B56A453C92D3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E7DC0041-C144-451D-9D52-B56A453C92D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E7DC0041-C144-451D-9D52-B56A453C92D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E7DC0041-C144-451D-9D52-B56A453C92D3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EBE2F498-DC69-40E5-B033-7270ED25C258}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EBE2F498-DC69-40E5-B033-7270ED25C258}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EBE2F498-DC69-40E5-B033-7270ED25C258}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EBE2F498-DC69-40E5-B033-7270ED25C258}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -46,6 +60,8 @@ Global
 		{8971ED33-C061-40A7-86BB-ABDAFA07D197} = {51468033-A31E-4CE9-8C1A-0710C57C6954}
 		{C495C71F-C868-4BC4-BA18-406178CA6B8B} = {51468033-A31E-4CE9-8C1A-0710C57C6954}
 		{0FCC6539-E100-4B2E-AAAE-5884C30F98D4} = {51468033-A31E-4CE9-8C1A-0710C57C6954}
+		{E7DC0041-C144-451D-9D52-B56A453C92D3} = {5062D7B6-719C-447C-9306-E5ABEA37EDAE}
+		{EBE2F498-DC69-40E5-B033-7270ED25C258} = {51468033-A31E-4CE9-8C1A-0710C57C6954}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {57EA32AA-7D49-45F1-9E15-93EC6C026DCB}
