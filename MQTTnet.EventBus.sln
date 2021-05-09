@@ -19,7 +19,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{5062D7B6
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MQTTnet.EventBus.Tests", "tests\MQTTnet.EventBus.Tests\MQTTnet.EventBus.Tests.csproj", "{E7DC0041-C144-451D-9D52-B56A453C92D3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MQTTnet.EventBus.ConfigurationApp", "samples\MQTTnet.EventBus.ConfigurationApp\MQTTnet.EventBus.ConfigurationApp.csproj", "{EBE2F498-DC69-40E5-B033-7270ED25C258}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MQTTnet.EventBus.ConfigurationApp", "samples\MQTTnet.EventBus.ConfigurationApp\MQTTnet.EventBus.ConfigurationApp.csproj", "{EBE2F498-DC69-40E5-B033-7270ED25C258}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

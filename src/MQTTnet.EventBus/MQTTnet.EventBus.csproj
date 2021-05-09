@@ -1,7 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.1;net5.0</TargetFrameworks>
+    <TargetFramework>netstandard2.1</TargetFramework>
     <Authors>Artyom Tonoyan</Authors>
     <Company>ArtNix LLC</Company>
     <Copyright>@ 2019 ARTNIX LLC</Copyright>
@@ -12,23 +12,14 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <Version>1.3.0</Version>
+    <OutputType>Library</OutputType>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MQTTnet" Version="3.0.13" />
-    <PackageReference Include="Polly" Version="7.1.1" />
-  </ItemGroup>
-
-  <!--<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.2.0" />
-  </ItemGroup>-->
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1' or '$(TargetFramework)' == 'netcoreapp3.1' ">
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.7" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'net5.0'">
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.14" />
+    <PackageReference Include="MQTTnet" Version="3.0.15" />
+    <PackageReference Include="Polly" Version="7.2.2" />
   </ItemGroup>
 
 </Project>
