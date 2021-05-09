@@ -38,7 +38,7 @@ namespace MQTTnet.EventBus
             _eventProvider = eventProvider;
             _consumeMethodInvoker = consumeMethodInvoker;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _subsManager = subsManager ?? new InMemorySubscriptionsManager();
+            _subsManager = subsManager ?? throw new ArgumentNullException(nameof(ISubscriptionsManager));
             _retryCount = busOptions?.RetryCount ?? 5;
             _scopeFactory = scopeFactory;
         }
@@ -80,12 +80,13 @@ namespace MQTTnet.EventBus
             var message = eventArgs.ApplicationMessage;
             _logger.LogTrace($"Processing Mqtt topic: {message.Topic}");
 
-            if (_subsManager.HasSubscriptionsForEvent(message.Topic))
+            var subscriptions = _subsManager.GetSubscriptions(message.Topic);
+            if (subscriptions.IsNullOrEmpty())
             {
-                var subscriptions = _subsManager.GetSubscriptions(message.Topic);
-                if (subscriptions == null)
-                    throw new Exception("");
-
+                _logger.LogWarning($"No subscription for Mqtt topic: {message.Topic}");
+            }
+            else
+            {
                 foreach (var subscription in subscriptions)
                 {
                     using (var scope = _scopeFactory.CreateScope())
@@ -100,10 +101,6 @@ namespace MQTTnet.EventBus
                         await _consumeMethodInvoker.InvokeAsync(consumer, subscription.EventType, converter, eventArgs);
                     }
                 }
-            }
-            else
-            {
-                _logger.LogWarning($"No subscription for Mqtt topic: {message.Topic}");
             }
         }
 

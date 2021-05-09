@@ -50,6 +50,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddSingleton(mqttClientOptions)
                 .AddSingleton<IDefaultConverter, DefaultConverter>()
                 .AddSingleton<IEventBus, MqttEventBus>()
+                .AddSingleton<ITopicComparer, MqttTopicComparer>()
                 .AddSingleton<IMqttPersisterConnection, DefaultMqttPersisterConnection>()
                 .AddSingleton<IEventBusClientProvider, EventBusClientProvider>()
                 .AddSingleton<ISubscriptionsManager, InMemorySubscriptionsManager>()

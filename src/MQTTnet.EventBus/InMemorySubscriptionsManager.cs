@@ -8,13 +8,15 @@ namespace MQTTnet.EventBus
     {
         private readonly Dictionary<string, HashSet<SubscriptionInfo>> _cache;
         private readonly HashSet<string> _eventTypes;
+        private readonly ITopicComparer _topicComparer;
 
         public event EventHandler<string> OnEventRemoved;
 
-        public InMemorySubscriptionsManager()
+        public InMemorySubscriptionsManager(ITopicComparer topicComparer)
         {
             _cache = new Dictionary<string, HashSet<SubscriptionInfo>>();
             _eventTypes = new HashSet<string>();
+            _topicComparer = topicComparer;
         }
 
         public bool IsEmpty => !_cache.Keys.Any();
@@ -30,19 +32,6 @@ namespace MQTTnet.EventBus
                 _eventTypes.Add(eventName);
             }
         }
-
-        //public void AddSubscription<TConsmer>(string topic)
-        //    where TConsmer : IConsumer
-        //{
-        //    var eventName = topic;
-
-        //    DoAddSubscription(typeof(TConsmer), eventName);
-
-        //    if (!_eventTypes.Contains(eventName))
-        //    {
-        //        _eventTypes.Add(eventName);
-        //    }
-        //}
 
         private void DoAddSubscription(SubscriptionInfo subscriptionInfo)
         {
@@ -67,13 +56,6 @@ namespace MQTTnet.EventBus
             var handlerToRemove = FindSubscriptionToRemove(subscriptionInfo.Topic, subscriptionInfo.ConsumerType);
             DoRemoveConsumer(subscriptionInfo.Topic, handlerToRemove);
         }
-
-        //public void RemoveSubscription<TConsmer>(string topic)
-        //    where TConsmer : IConsumer
-        //{
-        //    var handlerToRemove = FindSubscriptionToRemove<TConsmer>(topic);
-        //    DoRemoveConsumer(topic, handlerToRemove);
-        //}
 
         private void DoRemoveConsumer(string topic, SubscriptionInfo subsToRemove)
         {
@@ -109,13 +91,23 @@ namespace MQTTnet.EventBus
 
             return _cache[topic].SingleOrDefault(s => s.ConsumerType == consumerType);
         }
-        public bool HasSubscriptionsForEvent(string topic) => _cache.ContainsKey(topic);
+
+        public bool HasSubscriptionsForEvent(string topic) 
+        {
+            if (_cache.ContainsKey(topic))
+                return true;
+            return _cache.Keys.Any(filter => _topicComparer.IsMatch(topic, filter));
+        }
 
         public HashSet<SubscriptionInfo> GetSubscriptions(string topic)
         {
             if (_cache.TryGetValue(topic, out var options))
                 return options;
-            return null;
+
+            return _cache
+                .Where(p => _topicComparer.IsMatch(topic, p.Key))
+                .SelectMany(p => p.Value)
+                .ToHashSet(ComparersManager.SubscriptionInfo);
         }
     }
 }
