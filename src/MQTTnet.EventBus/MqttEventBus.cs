@@ -4,12 +4,11 @@ using MQTTnet.Client;
 using MQTTnet.Client.Publishing;
 using MQTTnet.Client.Subscribing;
 using MQTTnet.Client.Unsubscribing;
+using MQTTnet.EventBus.Reflection;
 using MQTTnet.Exceptions;
-using MQTTnet.Protocol;
 using Polly;
 using Polly.Retry;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -18,36 +17,30 @@ namespace MQTTnet.EventBus
 {
     public class MqttEventBus : IEventBus, IDisposable
     {
-        private readonly IMqttPersisterConnection _persistentConnection;
         private readonly ILogger<MqttEventBus> _logger;
-        private readonly IEventBusSubscriptionsManager _subsManager;
+        private readonly ISubscriptionsManager _subsManager;
         private readonly IServiceScopeFactory _scopeFactory;
+        private readonly IConsumeMethodInvoker _consumeMethodInvoker;
+        private readonly IEventBusClientProvider _eventBusClientProvider;
+        private readonly IEventProvider _eventProvider;
         private readonly int _retryCount;
 
-        private IMqttClient _mqttClient;
-
-        public MqttEventBus(IMqttPersisterConnection persistentConnection, ILogger<MqttEventBus> logger, 
-            IServiceScopeFactory scopeFactory, IEventBusSubscriptionsManager subsManager, int retryCount = 5)
+        public MqttEventBus(
+            IEventBusClientProvider eventBusClientProvider,
+            IEventProvider eventProvider,
+            IConsumeMethodInvoker consumeMethodInvoker,
+            ILogger<MqttEventBus> logger,
+            IServiceScopeFactory scopeFactory,
+            ISubscriptionsManager subsManager,
+            BusOptions busOptions)
         {
-            _persistentConnection = persistentConnection ?? throw new ArgumentNullException(nameof(persistentConnection));
+            _eventBusClientProvider = eventBusClientProvider ?? throw new ArgumentNullException(nameof(eventBusClientProvider));
+            _eventProvider = eventProvider;
+            _consumeMethodInvoker = consumeMethodInvoker;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _subsManager = subsManager ?? new InMemoryEventBusSubscriptionsManager();
-            _mqttClient = _persistentConnection.GetClient();
-            _mqttClient.UseApplicationMessageReceivedHandler(e => Consumer_Received(e));
-            _retryCount = retryCount;
+            _subsManager = subsManager ?? throw new ArgumentNullException(nameof(ISubscriptionsManager));
+            _retryCount = busOptions?.RetryCount ?? 5;
             _scopeFactory = scopeFactory;
-
-            //_subsManager.OnEventRemoved += SubsManager_OnEventRemoved;
-        }
-
-        private void SubsManager_OnEventRemoved(object sender, string eventName)
-        {
-            if (!_persistentConnection.IsConnected)
-            {
-                _persistentConnection.TryConnect();
-            }
-
-            //_mqttClient.UnsubscribeAsync()
         }
 
         private async void Consumer_Received(MqttApplicationMessageReceivedEventArgs eventArgs)
@@ -66,11 +59,12 @@ namespace MQTTnet.EventBus
 
         public Task<MqttClientPublishResult> PublishAsync(MqttApplicationMessage message)
         {
-            if (!_persistentConnection.IsConnected)
+            var connection = _eventBusClientProvider.GetOrCreateMqttConnection(message.Topic);
+            if (!connection.IsConnected)
             {
-                _persistentConnection.TryConnect();
+                connection.TryConnect();
             }
-            
+
             var policy = RetryPolicy.Handle<SocketException>()
                 .Or<MqttCommunicationException>()
                 .WaitAndRetry(_retryCount, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), (ex, time) =>
@@ -78,7 +72,7 @@ namespace MQTTnet.EventBus
                     _logger.LogWarning(ex, $"Could not publish topic: {message?.Topic} after {time.TotalSeconds:n1}s ({ex.Message})");
                 });
 
-            return policy.Execute(() => _mqttClient.PublishAsync(message));
+            return policy.Execute(() => connection.GetClient().PublishAsync(message));
         }
 
         private async Task ProcessEvent(MqttApplicationMessageReceivedEventArgs eventArgs)
@@ -86,99 +80,121 @@ namespace MQTTnet.EventBus
             var message = eventArgs.ApplicationMessage;
             _logger.LogTrace($"Processing Mqtt topic: {message.Topic}");
 
-            if (_subsManager.HasSubscriptionsForEvent(message.Topic))
+            var subscriptions = _subsManager.GetSubscriptions(message.Topic);
+            if (subscriptions.IsNullOrEmpty())
             {
-                using (var scope = _scopeFactory.CreateScope())
-                {
-                    var subscriptions = _subsManager.GetHandlersForEvent(message.Topic);
-                    foreach (var subscription in subscriptions)
-                    {
-                        var handler = scope.ServiceProvider.GetService(subscription.HandlerType);
-                        if (handler == null)
-                            continue;
-
-                        var eventType = _subsManager.GetEventType();
-                        var concreteType = typeof(IIntegrationEventHandler<>).MakeGenericType(eventType);
-
-                        await Task.Yield();
-                        await (Task)concreteType
-                            .GetMethod(nameof(IIntegrationEventHandler.Handle))
-                            .Invoke(handler, new object[] { eventArgs });
-                    }
-                }
+                _logger.LogWarning($"No subscription for Mqtt topic: {message.Topic}");
             }
             else
             {
-                _logger.LogWarning($"No subscription for Mqtt topic: {message.Topic}");
+                foreach (var subscription in subscriptions)
+                {
+                    using (var scope = _scopeFactory.CreateScope())
+                    {
+                        var consumer = scope.ServiceProvider.GetService(subscription.ConsumerType);
+                        if (consumer == null)
+                            continue;
+
+                        var converterType = _eventProvider.GetConverterType(subscription.EventName);
+                        var converter = scope.ServiceProvider.GetService(converterType);
+                        await Task.Yield();
+                        await _consumeMethodInvoker.InvokeAsync(consumer, subscription.EventType, converter, eventArgs);
+                    }
+                }
             }
         }
 
         public void Dispose()
         {
-            if (_mqttClient != null)
-            {
-                _mqttClient.Dispose();
-            }
-
+            _eventBusClientProvider.Dispose();
             _subsManager.Clear();
         }
 
-        public Task<MqttClientSubscribeResult> SubscribeAsync<TH>(string topic)
-            where TH : IIntegrationEventHandler
+        public Task<MqttClientSubscribeResult> SubscribeAsync(SubscriptionInfo subscriptionInfo)
         {
-            _logger.LogInformation($"Subscribing to topic {topic} with {typeof(TH).Name}");
+            string topic = subscriptionInfo.Topic;
+            _logger.LogInformation($"Subscribing to topic {topic} with {subscriptionInfo.ConsumerType.Name}");
 
             var containsKey = _subsManager.HasSubscriptionsForEvent(topic);
             if (!containsKey)
             {
-                if (!_persistentConnection.IsConnected)
+                if (_eventBusClientProvider.RegisterMessageHandler(topic, Consumer_Received, out var connection))
                 {
-                    _persistentConnection.TryConnect();
+                    _subsManager.AddSubscription(subscriptionInfo);
+                    return connection.GetClient().SubscribeAsync(topic);
                 }
-
-                _subsManager.AddSubscription<TH>(topic);
-                return _mqttClient.SubscribeAsync(topic);
             }
 
             return Task.Factory.StartNew(() => new MqttClientSubscribeResult());
         }
 
-        public async Task<List<MqttClientSubscribeResult>> ReSubscribeAllTopicsAsync()
+        public Task<MqttClientUnsubscribeResult> UnsubscribeAsync(SubscriptionInfo subscriptionInfo)
         {
-            var topics = _subsManager.AllTopics().ToList();
-            var results = new List<MqttClientSubscribeResult>(topics.Count);
-            foreach (string topic in _subsManager.AllTopics())
-            {
-                if (!_persistentConnection.IsConnected)
-                {
-                    _persistentConnection.TryConnect();
-                }
-
-                var res = await _mqttClient.SubscribeAsync(topic);
-                results.Add(res);
-            }
-
-            return results;
-        }
-
-        public Task<MqttClientUnsubscribeResult> UnsubscribeAsync<TH>(string topic) 
-            where TH : IIntegrationEventHandler
-        {
-            _logger.LogInformation($"Subscribing to topic {topic} with {typeof(TH).Name}");
+            var topic = subscriptionInfo.Topic;
+            _logger.LogInformation($"Subscribing to topic {topic} with {subscriptionInfo.ConsumerType.Name}");
 
             var containsKey = _subsManager.HasSubscriptionsForEvent(topic);
             if (!containsKey)
             {
-                if (!_persistentConnection.IsConnected)
-                {
-                    _persistentConnection.TryConnect();
-                }
-
-                _subsManager.RemoveSubscription<TH>(topic);
-                return _mqttClient.UnsubscribeAsync(topic);
+                _subsManager.RemoveSubscription(subscriptionInfo);
+                return _eventBusClientProvider.RemoveSubscriptionAsync(topic);
             }
 
             return Task.Factory.StartNew(() => new MqttClientUnsubscribeResult());
         }
+
+
+        //public Task<MqttClientSubscribeResult> SubscribeAsync<TConsumer>(string topic)
+        //    where TConsumer : IConsumer
+        //{
+        //    _logger.LogInformation($"Subscribing to topic {topic} with {typeof(TConsumer).Name}");
+
+        //    var containsKey = _subsManager.HasSubscriptionsForEvent(topic);
+        //    if (!containsKey)
+        //    {
+        //        if (_eventBusClientProvider.RegisterMessageHandler(topic, Consumer_Received, out var connection))
+        //        {
+        //            _subsManager.AddSubscription<TConsumer>(topic);
+        //            return connection.GetClient().SubscribeAsync(topic);
+        //        }
+        //    }
+
+        //    return Task.Run(() => new MqttClientSubscribeResult());
+        //}
+
+        public Task<MqttClientSubscribeResult[]> ReSubscribeAllTopicsAsync()
+        {
+            var aaa = _subsManager.AllTopics().Select(topic =>
+            {
+                var connection = _eventBusClientProvider.GetOrCreateMqttConnection(topic);
+                if (!connection.IsConnected)
+                {
+                    if (connection.TryConnect())
+                    {
+                        return connection.GetClient().SubscribeAsync(topic);
+                    }
+                    return Task.Run(() => new MqttClientSubscribeResult());
+                }
+                else
+                    return connection.GetClient().SubscribeAsync(topic);
+            });
+
+            return Task.WhenAll(aaa);
+        }
+
+        //public Task<MqttClientUnsubscribeResult> UnsubscribeAsync<TConsumer>(string topic)
+        //    where TConsumer : IConsumer
+        //{
+        //    _logger.LogInformation($"Subscribing to topic {topic} with {typeof(TConsumer).Name}");
+
+        //    var containsKey = _subsManager.HasSubscriptionsForEvent(topic);
+        //    if (!containsKey)
+        //    {
+        //        _subsManager.RemoveSubscription<TConsumer>(topic);
+        //        return _eventBusClientProvider.RemoveSubscriptionAsync(topic);
+        //    }
+
+        //    return Task.Factory.StartNew(() => new MqttClientUnsubscribeResult());
+        //}
     }
 }

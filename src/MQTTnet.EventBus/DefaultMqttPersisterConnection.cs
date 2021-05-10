@@ -2,30 +2,122 @@
 using MQTTnet.Client;
 using MQTTnet.Client.Disconnecting;
 using MQTTnet.Client.Options;
+using MQTTnet.Client.Unsubscribing;
 using MQTTnet.Exceptions;
 using Polly;
 using Polly.Retry;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 
 namespace MQTTnet.EventBus
 {
+    public interface IEventBusClientProvider : IDisposable
+    {
+        IMqttPersisterConnection GetOrCreateMqttConnection(string topicPath);
+        bool RegisterMessageHandler(string topic, Action<MqttApplicationMessageReceivedEventArgs> handler, out IMqttPersisterConnection persisterConnection);
+        Task<MqttClientUnsubscribeResult> RemoveSubscriptionAsync(string topic);
+    }
+
+    public class EventBusClientProvider : IEventBusClientProvider
+    {
+        private bool _disposed;
+        private readonly IMqttClientOptions _options;
+        private readonly BusOptions _busOptions;
+        private readonly ILogger<EventBusClientProvider> _logger;
+        private readonly object _syncObject;
+        private readonly ILoggerFactory _loggerFactory;
+
+        private readonly IDictionary<string, IMqttPersisterConnection> _persisterConnections;
+
+        public EventBusClientProvider(IMqttClientOptions options, BusOptions busOptions, ILoggerFactory loggerFactory)
+        {
+            _options = options;
+            _logger = loggerFactory.CreateLogger<EventBusClientProvider>();
+            _busOptions = busOptions;
+            _loggerFactory = loggerFactory;
+            _persisterConnections = new Dictionary<string, IMqttPersisterConnection>();
+            _syncObject = new object();
+        }
+
+        public IMqttPersisterConnection GetOrCreateMqttConnection(string topic)
+        {
+            lock (_syncObject)
+            {
+                if (TryGetMqttConnection(topic, out var connection))
+                    return connection;
+
+                connection = new DefaultMqttPersisterConnection(_options, _loggerFactory.CreateLogger<DefaultMqttPersisterConnection>(), _busOptions);
+                _persisterConnections.Add(topic, connection);
+                return connection;
+            }
+        }
+
+        public bool RegisterMessageHandler(string topic, Action<MqttApplicationMessageReceivedEventArgs> handler, out IMqttPersisterConnection persisterConnection)
+        {
+            persisterConnection = GetOrCreateMqttConnection(topic);
+            if (persisterConnection.TryConnect())
+                persisterConnection.GetClient().UseApplicationMessageReceivedHandler(handler);
+
+            return persisterConnection.IsConnected;
+        }
+
+        private bool TryGetMqttConnection(string topic, out IMqttPersisterConnection connection)
+            => _persisterConnections.TryGetValue(topic, out connection);
+
+        public async Task<MqttClientUnsubscribeResult> RemoveSubscriptionAsync(string topic)
+        {
+            if (TryGetMqttConnection(topic, out var connection))
+            {
+                if (!connection.IsConnected)
+                {
+                    if (connection.TryConnect())
+                    {
+                        return await connection.GetClient().UnsubscribeAsync(topic);
+                    }
+                }
+
+                _persisterConnections.Remove(topic);
+            }
+
+            return null;
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+                return;
+
+            lock (_syncObject)
+            {
+                foreach (var conn in _persisterConnections)
+                {
+                    conn.Value.Dispose();
+                }
+            }
+            _persisterConnections?.Clear();
+
+            _disposed = true;
+        }
+    }
+
     public class DefaultMqttPersisterConnection : IMqttPersisterConnection
     {
         private bool _disposed;
         private IMqttClient _client;
         private IMqttClientOptions _options;
         private readonly int _retryCount;
-        private readonly ILogger<DefaultMqttPersisterConnection> _logger;
+        private readonly ILogger _logger;
         private readonly object _syncObject;
 
-        public DefaultMqttPersisterConnection(IMqttClientOptions mqttClientOptions, ILogger<DefaultMqttPersisterConnection> logger, int retryCount = 5)
+        public DefaultMqttPersisterConnection(IMqttClientOptions mqttClientOptions, ILogger logger, BusOptions busOptions)
         {
             _syncObject = new object();
             _options = mqttClientOptions;
             _logger = logger;
-            _retryCount = retryCount;
+            _retryCount = busOptions?.RetryCount ?? 5;
             _client = CreareMqttClient();
         }
 
@@ -92,7 +184,6 @@ namespace MQTTnet.EventBus
             {
                 _client?.Dispose();
                 _client = null;
-                _options = null;
             }
             catch (IOException ex)
             {

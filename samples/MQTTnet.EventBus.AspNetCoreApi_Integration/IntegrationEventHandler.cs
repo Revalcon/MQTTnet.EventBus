@@ -2,9 +2,9 @@
 
 namespace MQTTnet.EventBus.AspNetCoreApi_Integration
 {
-    public class IntegrationEventHandler : IIntegrationEventHandler
+    public class IntegrationEventHandler : IConsumer
     {
-        public Task Handle(MqttApplicationMessageReceivedEventArgs args)
+        public Task Consume(MqttApplicationMessageReceivedEventArgs args)
         {
             //Some action...
             return Task.CompletedTask;
