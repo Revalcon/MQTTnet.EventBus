@@ -3,17 +3,18 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <Authors>Artyom Tonoyan</Authors>
-    <Company>ArtNix LLC</Company>
-    <Copyright>@ 2019 ARTNIX LLC</Copyright>
-    <PackageLicenseUrl>https://github.com/arttonoyan/MQTTnet.EventBus/blob/master/LICENSE</PackageLicenseUrl>
+    <Company>Revalcon LLC</Company>
+    <Copyright>@ 2019 Revalcon LLC</Copyright>
+    <PackageLicenseUrl>https://github.com/Revalcon/MQTTnet.EventBus/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/Revalcon/MQTTnet.EventBus</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Revalcon/MQTTnet.EventBus</RepositoryUrl>
     <PackageTags>Mqtt MqttNet EventBus Event MQ</PackageTags>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <Version>1.3.0</Version>
+    <Version>2.0.0</Version>
     <OutputType>Library</OutputType>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Description>Event-Based framework for distributed applications (MQTT Core transport support).</Description>
   </PropertyGroup>
 
   <ItemGroup>

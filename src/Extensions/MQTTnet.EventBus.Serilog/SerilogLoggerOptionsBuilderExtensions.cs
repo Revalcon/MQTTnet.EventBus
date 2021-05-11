@@ -1,10 +1,10 @@
 ﻿using System;
-using Serilog;
 using MQTTnet.EventBus.Serilog;
 using MQTTnet.EventBus.DependencyInjection;
 using MQTTnet.EventBus.DependencyInjection.Builder;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace Microsoft.Extensions.DependencyInjection
+namespace Serilog
 {
     public static class SerilogLoggerOptionsBuilderExtensions
     {
