@@ -54,10 +54,7 @@ namespace MQTTnet.EventBus.Microsoft.Extensions.Logging
             => _logger.LogError(ex, message);
 
         public void Publish(MqttNetLogLevel logLevel, string message, object[] parameters, Exception exception)
-        {
-            var mqttNetLogLevel = _logLevelMap[logLevel];
-            _logger.Log(mqttNetLogLevel, exception, message, parameters);
-        }
+            => _logger.Log(_logLevelMap[logLevel], exception, message, parameters);
     }
 
     public class MicrosoftEventBusLogger<TCategoryName> : MicrosoftEventBusLogger, IEventBusLogger<TCategoryName>
