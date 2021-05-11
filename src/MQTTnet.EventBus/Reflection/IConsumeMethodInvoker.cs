@@ -15,14 +15,5 @@ namespace MQTTnet.EventBus.Reflection
                 (Serializers.IEventDeserializer<object>)deserializer,
                 message
             });
-
-        //public static Task InvokeAsync(this IConsumeMethodInvoker invoker, object consumer, Type eventType, Type deserializerType, MqttApplicationMessageReceivedEventArgs message)
-        //{
-        //    var deserializer = Activator.CreateInstance(deserializerType.MakeGenericType(eventType));
-        //    return invoker.InvokeAsync(consumer, eventType, new object[] { deserializer, message });
-        //}
-
-        //public static Task InvokeAsync<TEvent>(this IConsumeMethodInvoker invoker, object consumer, Lazy<TEvent> converter, MqttApplicationMessageReceivedEventArgs message)
-        //    => invoker.InvokeAsync(consumer, typeof(TEvent), new object[] { converter, message });
     }
 }
