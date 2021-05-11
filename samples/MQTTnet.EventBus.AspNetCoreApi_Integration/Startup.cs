@@ -28,9 +28,9 @@ namespace MQTTnet.EventBus.AspNetCoreApi_Integration
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
             var retryCount = 5;
-            services.AddMqttEventBus(cfg =>
+            services.AddMqttEventBus((host, service) =>
             {
-                cfg
+                host
                     .WithClientId("Api")
                     .WithTcpServer("{Ip Address}", 1883);
 
