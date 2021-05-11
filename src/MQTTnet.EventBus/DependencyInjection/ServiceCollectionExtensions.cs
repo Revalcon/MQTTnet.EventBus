@@ -76,29 +76,5 @@ namespace Microsoft.Extensions.DependencyInjection
                 loggerConfigurator.Invoke(loggerBuilder);
             }, ServiceType.Logger);
         }
-
-        //public static IServiceCollection AddMqttEventBus_Old(this IServiceCollection services, IMqttClientOptions mqttClientOptions, int retryCount = 5)
-        //    => services.AddMqttEventBus(mqttClientOptions, new BusOptions { RetryCount = retryCount });
-
-        //public static IServiceCollection AddMqttEventBus_Old(this IServiceCollection services, Action<MqttClientOptionsBuilder> hostConfigurator, int retryCount = 5)
-        //{
-        //    var builder = new MqttClientOptionsBuilder();
-        //    hostConfigurator.Invoke(builder);
-        //    var options = builder.Build();
-
-        //    return services.AddMqttEventBus(options, new BusOptions { RetryCount = retryCount });
-        //}
-
-        //public static IServiceCollection AddMqttEventBus(this IServiceCollection services, IMqttClientOptions mqttClientOptions, BusOptions busOptions)
-        //    => services
-        //        .AddSingleton(busOptions)
-        //        .AddSingleton(mqttClientOptions)
-        //        .AddSingleton<IStringConverter, StringConverter>()
-        //        .AddSingleton<IEventBus, MqttEventBus>()
-        //        .AddSingleton<ITopicComparer, MqttTopicComparer>()
-        //        .AddSingleton<IMqttPersisterConnection, DefaultMqttPersisterConnection>()
-        //        .AddSingleton<IEventBusClientProvider, EventBusClientProvider>()
-        //        .AddSingleton<ISubscriptionsManager, InMemorySubscriptionsManager>()
-        //        .AddSingleton<IConsumeMethodInvoker, ConsumeMethodInvoker>();
     }
 }
