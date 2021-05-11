@@ -1,8 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
-using MQTTnet.Client;
+﻿using MQTTnet.Client;
 using MQTTnet.Client.Disconnecting;
 using MQTTnet.Client.Options;
 using MQTTnet.Client.Unsubscribing;
+using MQTTnet.EventBus.Logger;
 using MQTTnet.Exceptions;
 using Polly;
 using Polly.Retry;
@@ -26,18 +26,16 @@ namespace MQTTnet.EventBus
         private bool _disposed;
         private readonly IMqttClientOptions _options;
         private readonly BusOptions _busOptions;
-        private readonly ILogger<EventBusClientProvider> _logger;
+        private readonly IEventBusLogger<EventBusClientProvider> _logger;
         private readonly object _syncObject;
-        private readonly ILoggerFactory _loggerFactory;
 
         private readonly IDictionary<string, IMqttPersisterConnection> _persisterConnections;
 
-        public EventBusClientProvider(IMqttClientOptions options, BusOptions busOptions, ILoggerFactory loggerFactory)
+        public EventBusClientProvider(IMqttClientOptions options, BusOptions busOptions, IEventBusLogger<EventBusClientProvider> logger)
         {
             _options = options;
-            _logger = loggerFactory.CreateLogger<EventBusClientProvider>();
+            _logger = logger;
             _busOptions = busOptions;
-            _loggerFactory = loggerFactory;
             _persisterConnections = new Dictionary<string, IMqttPersisterConnection>();
             _syncObject = new object();
         }
@@ -49,7 +47,7 @@ namespace MQTTnet.EventBus
                 if (TryGetMqttConnection(topic, out var connection))
                     return connection;
 
-                connection = new DefaultMqttPersisterConnection(_options, _loggerFactory.CreateLogger<DefaultMqttPersisterConnection>(), _busOptions);
+                connection = new DefaultMqttPersisterConnection(_options, _logger.CreateLogger<DefaultMqttPersisterConnection>(), _busOptions);
                 _persisterConnections.Add(topic, connection);
                 return connection;
             }
@@ -109,10 +107,10 @@ namespace MQTTnet.EventBus
         private IMqttClient _client;
         private IMqttClientOptions _options;
         private readonly int _retryCount;
-        private readonly ILogger _logger;
+        private readonly IEventBusLogger<DefaultMqttPersisterConnection> _logger;
         private readonly object _syncObject;
 
-        public DefaultMqttPersisterConnection(IMqttClientOptions mqttClientOptions, ILogger logger, BusOptions busOptions)
+        public DefaultMqttPersisterConnection(IMqttClientOptions mqttClientOptions, IEventBusLogger<DefaultMqttPersisterConnection> logger, BusOptions busOptions)
         {
             _syncObject = new object();
             _options = mqttClientOptions;
@@ -148,18 +146,6 @@ namespace MQTTnet.EventBus
 
                 policy.Execute(() => _client.ConnectAsync(_options)).GetAwaiter().GetResult();
                 return IsConnected;
-
-                //if (IsConnected)
-                //{
-                //    _client.UseDisconnectedHandler(e => OnDisconnected(e));
-                //    _logger.LogInformation($"Mqtt Client acquired a persistent connection to '{_options.ClientId}' and is subscribed to failure events");
-                //    return true;
-                //}
-                //else
-                //{
-                //    _logger.LogCritical("FATAL ERROR: Mqtt Client connections could not be created and opened");
-                //    return false;
-                //}
             }
         }
 
@@ -187,7 +173,7 @@ namespace MQTTnet.EventBus
             }
             catch (IOException ex)
             {
-                _logger.LogCritical(ex.ToString());
+                _logger.LogError(ex, $"MqttClient cann't Dispose");
             }
         }
     }

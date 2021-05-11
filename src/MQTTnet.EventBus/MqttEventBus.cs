@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using MQTTnet.Client;
 using MQTTnet.Client.Publishing;
 using MQTTnet.Client.Subscribing;
 using MQTTnet.Client.Unsubscribing;
+using MQTTnet.EventBus.Logger;
 using MQTTnet.EventBus.Reflection;
 using MQTTnet.Exceptions;
 using Polly;
@@ -17,7 +17,7 @@ namespace MQTTnet.EventBus
 {
     public class MqttEventBus : IEventBus, IDisposable
     {
-        private readonly ILogger<MqttEventBus> _logger;
+        private readonly IEventBusLogger<MqttEventBus> _logger;
         private readonly ISubscriptionsManager _subsManager;
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IConsumeMethodInvoker _consumeMethodInvoker;
@@ -29,7 +29,7 @@ namespace MQTTnet.EventBus
             IEventBusClientProvider eventBusClientProvider,
             IEventProvider eventProvider,
             IConsumeMethodInvoker consumeMethodInvoker,
-            ILogger<MqttEventBus> logger,
+            IEventBusLogger<MqttEventBus> logger,
             IServiceScopeFactory scopeFactory,
             ISubscriptionsManager subsManager,
             BusOptions busOptions)

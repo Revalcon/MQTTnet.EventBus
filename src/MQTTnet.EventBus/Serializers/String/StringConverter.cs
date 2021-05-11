@@ -1,10 +1,10 @@
 ﻿using System.Text;
 
-namespace MQTTnet.EventBus.Serializers.Default
+namespace MQTTnet.EventBus.Serializers.String
 {
-    public interface IDefaultConverter : IEventConverter<string> { }
+    public interface IStringConverter : IEventConverter<string> { }
 
-    public class DefaultConverter : IDefaultConverter
+    public class StringConverter : IStringConverter
     {
         public virtual string Deserialize(byte[] value) => Encoding.UTF8.GetString(value);
 
