@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MQTTnet.EventBus.Serializers;
-using MQTTnet.EventBus.Serializers.Default;
+using MQTTnet.EventBus.Serializers.String;
+using Serilog;
 using System;
 using System.Threading.Tasks;
 
@@ -10,12 +11,12 @@ namespace MQTTnet.EventBus.ConfigurationApp
     {
         private static IServiceProvider _provider;
 
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
             Configure();
 
-            var eventProvider = _provider.GetService<IEventProvider>();
+            var eventBus = _provider.GetService<IEventBus>();
+            await eventBus.SubscribeAsync<MyEvent>("/state/#");
 
             Console.ReadLine();
         }
@@ -23,17 +24,27 @@ namespace MQTTnet.EventBus.ConfigurationApp
         public static void Configure()
         {
             var services = new ServiceCollection();
-            services.AddMqttEventBus((host, cfg) =>
+
+            services.AddMqttEventBus((host, service) =>
             {
                 host
-                    .WithClientId("Api")
-                    .WithTcpServer("{Ip Address}", port: 1883);
+                    .WithClientId($"Artyom Test {Guid.NewGuid()}")
+                    .WithTcpServer("IP Address", port: 1883);
 
-                cfg.AddConsumer<MyEvent, MyConsumer>(c =>
+                service.AddEvenets(eventBuilder =>
                 {
-                    c.UseConverter<MyConverter>();
-                    c.UseMessageBuilder(builder => builder.WithRetainFlag());
+                    eventBuilder.AddConsumer<MyEvent, MyConsumer>(cfg =>
+                    {
+                        cfg.UseConverter<MyConverter>();
+                        cfg.UseMessageBuilder(builder => builder.WithRetainFlag());
+                    });
                 });
+
+                service.AddLogger(provider => provider.UseSerilog(cfg =>
+                {
+                    cfg.WriteTo.Console(
+                        outputTemplate: "{Timestamp:HH:mm} [{Category} {Level}] ({ThreadId}) {Message}{NewLine}{Exception}");
+                }));
             });
 
             _provider = services.BuildServiceProvider();
@@ -42,40 +53,47 @@ namespace MQTTnet.EventBus.ConfigurationApp
 
     public class MyConverter : IEventConverter<MyEvent>
     {
-        private IDefaultConverter _defaultConverter;
+        private IStringConverter _stringConverter;
 
-        public MyConverter()
+        public MyConverter(IStringConverter stringConverter)
         {
-            _defaultConverter = new DefaultConverter();
+            _stringConverter = stringConverter;
         }
 
         public MyEvent Deserialize(byte[] value)
         {
-            string data = _defaultConverter.Deserialize(value);
-            return new MyEvent 
-            {
-                Number = int.Parse(data.Substring(0, 2)),
-                Value = int.Parse(data.Substring(2)),
-            };
+            string data = _stringConverter.Deserialize(value);
+            if (!int.TryParse(data, out int status))
+                status = -1;
+
+            return new MyEvent { Status = status };
         }
 
         public byte[] Serialize(MyEvent value)
         {
-            string data = string.Format($"{value.Number}{value.Value}");
-            return _defaultConverter.Serialize(data);
+            string data = string.Format($"{value.Status}{value.Status}");
+            return _stringConverter.Serialize(data);
         }
     }
 
     public class MyEvent
     {
-        public int Number { get; set; }
-        public int Value { get; set; }
+        public int Status { get; set; }
     }
 
     public class MyConsumer : IConsumer<MyEvent>
     {
         public Task ConsumeAsync(EventContext<MyEvent> context)
         {
+            try
+            {
+                var status = context.EventArg.Status;
+                Console.WriteLine($"{context.Message.Topic} Status: {status}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
             return Task.CompletedTask;
         }
     }

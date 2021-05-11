@@ -6,6 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Extensions\MQTTnet.EventBus.Serilog\MQTTnet.EventBus.Serilog.csproj" />
     <ProjectReference Include="..\..\src\MQTTnet.EventBus\MQTTnet.EventBus.csproj" />
   </ItemGroup>
 
