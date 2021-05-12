@@ -5,7 +5,7 @@
     <Authors>Artyom Tonoyan</Authors>
     <Company>Revalcon LLC</Company>
     <Copyright>@ 2019 Revalcon LLC</Copyright>
-    <PackageLicenseUrl>https://github.com/Revalcon/MQTTnet.EventBus/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageLicenseUrl></PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/Revalcon/MQTTnet.EventBus</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Revalcon/MQTTnet.EventBus</RepositoryUrl>
     <PackageTags>Mqtt MqttNet EventBus Event MQ</PackageTags>
@@ -15,6 +15,7 @@
     <OutputType>Library</OutputType>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Description>Event-Based framework for distributed applications (MQTT Core transport support).</Description>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
