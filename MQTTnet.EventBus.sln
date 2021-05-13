@@ -25,7 +25,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Extensions", "Extensions", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MQTTnet.EventBus.Microsoft.Extensions.Logging", "src\Extensions\MQTTnet.EventBus.Microsoft.Extensions.Logging\MQTTnet.EventBus.Microsoft.Extensions.Logging.csproj", "{9287C48F-C1E1-4EB2-8598-AAC627206A4F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MQTTnet.EventBus.Serilog", "src\Extensions\MQTTnet.EventBus.Serilog\MQTTnet.EventBus.Serilog.csproj", "{8A8980F7-0C59-494F-B633-B324CD04D156}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MQTTnet.EventBus.Serilog", "src\Extensions\MQTTnet.EventBus.Serilog\MQTTnet.EventBus.Serilog.csproj", "{8A8980F7-0C59-494F-B633-B324CD04D156}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MQTTnet.EventBus.Newtonsoft.Json", "src\Extensions\MQTTnet.EventBus.Newtonsoft.Json\MQTTnet.EventBus.Newtonsoft.Json.csproj", "{5C256731-BE39-46CC-80B7-4D4FFA6A1FA6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -65,6 +67,10 @@ Global
 		{8A8980F7-0C59-494F-B633-B324CD04D156}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8A8980F7-0C59-494F-B633-B324CD04D156}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8A8980F7-0C59-494F-B633-B324CD04D156}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5C256731-BE39-46CC-80B7-4D4FFA6A1FA6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C256731-BE39-46CC-80B7-4D4FFA6A1FA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5C256731-BE39-46CC-80B7-4D4FFA6A1FA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5C256731-BE39-46CC-80B7-4D4FFA6A1FA6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -79,6 +85,7 @@ Global
 		{9C43141B-6F39-4C71-A0AB-E401CC3D7E99} = {805378E6-757B-4C68-9EDE-65FBB0CEBECB}
 		{9287C48F-C1E1-4EB2-8598-AAC627206A4F} = {9C43141B-6F39-4C71-A0AB-E401CC3D7E99}
 		{8A8980F7-0C59-494F-B633-B324CD04D156} = {9C43141B-6F39-4C71-A0AB-E401CC3D7E99}
+		{5C256731-BE39-46CC-80B7-4D4FFA6A1FA6} = {9C43141B-6F39-4C71-A0AB-E401CC3D7E99}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {57EA32AA-7D49-45F1-9E15-93EC6C026DCB}
