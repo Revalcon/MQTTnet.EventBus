@@ -10,6 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Extensions\MQTTnet.EventBus.Newtonsoft.Json\MQTTnet.EventBus.Newtonsoft.Json.csproj" />
     <ProjectReference Include="..\..\src\Extensions\MQTTnet.EventBus.Serilog\MQTTnet.EventBus.Serilog.csproj" />
     <ProjectReference Include="..\..\src\MQTTnet.EventBus\MQTTnet.EventBus.csproj" />
   </ItemGroup>

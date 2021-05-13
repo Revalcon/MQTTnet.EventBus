@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <Authors>Artyom Tonoyan</Authors>
+    <Company>Revalcon LLC</Company>
+    <Copyright>@ 2019 Revalcon LLC</Copyright>
+    <PackageLicenseUrl></PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/Revalcon/MQTTnet.EventBus</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Revalcon/MQTTnet.EventBus</RepositoryUrl>
+    <PackageTags>Mqtt MqttNet EventBus Event MQ Newtonsoft Json</PackageTags>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <Version>2.0.0</Version>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\MQTTnet.EventBus\MQTTnet.EventBus.csproj" />
+  </ItemGroup>
+
+</Project>

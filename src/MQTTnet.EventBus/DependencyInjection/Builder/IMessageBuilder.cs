@@ -12,11 +12,11 @@ namespace MQTTnet.EventBus.DependencyInjection.Builder
 namespace Microsoft.Extensions.DependencyInjection
 {
     using MQTTnet.EventBus.DependencyInjection.Builder;
-    using MQTTnet.EventBus.Serializers.String;
+    using MQTTnet.EventBus.Serializers.Text;
 
     public static class IMessageBuilderExtensions
     {
-        public static IMessageBuilder<string> UseDefaultConverter(this IMessageBuilder<string> messageBuilder)
+        public static IMessageBuilder<string> UseTextConverter(this IMessageBuilder<string> messageBuilder)
             => messageBuilder.UseConverter<StringConverter>();
     }
 }
