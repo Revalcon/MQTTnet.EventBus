@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 where TConsumer : IConsumer<string>
         {
             if(convertorConfigurator == null)
-                convertorConfigurator = cfg => cfg.UseDefaultConverter();
+                convertorConfigurator = cfg => cfg.UseTextConverter();
 
             return builder.AddConsumer<string, TConsumer>(eventName, convertorConfigurator);
         }

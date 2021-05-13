@@ -3,7 +3,7 @@ using MQTTnet.EventBus;
 using MQTTnet.EventBus.DependencyInjection.Builder;
 using MQTTnet.EventBus.DependencyInjection.Builder.Impl;
 using MQTTnet.EventBus.Reflection;
-using MQTTnet.EventBus.Serializers.String;
+using MQTTnet.EventBus.Serializers.Text;
 using System;
 using System.Collections.Generic;
 
