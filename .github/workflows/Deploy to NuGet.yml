@@ -42,6 +42,7 @@ jobs:
         dotnet pack 'src/MQTTnet.EventBus/MQTTnet.EventBus.csproj' ${{ steps.pack-command.outputs.PARAMS }}
         dotnet pack 'src/Extensions/MQTTnet.EventBus.Serilog/MQTTnet.EventBus.Serilog.csproj' ${{ steps.pack-command.outputs.PARAMS }}
         dotnet pack 'src/Extensions/MQTTnet.EventBus.Microsoft.Extensions.Logging/MQTTnet.EventBus.Microsoft.Extensions.Logging.csproj' ${{ steps.pack-command.outputs.PARAMS }}
+        dotnet pack 'src/Extensions/MQTTnet.EventBus.Newtonsoft.Json/MQTTnet.EventBus.Newtonsoft.Json.csproj' ${{ steps.pack-command.outputs.PARAMS }}
       
     - name: Archive NuGet Package MQTTnet.EventBus
       uses: actions/upload-artifact@v1
@@ -58,3 +59,4 @@ jobs:
         dotnet nuget push ${{ env.PACKAGE_OUTPUT_DIRECTORY }}/MQTTnet.EventBus.${{ github.event.inputs.packageVersion }}.nupkg ${{ steps.push-command.outputs.PARAMS }}
         dotnet nuget push ${{ env.PACKAGE_OUTPUT_DIRECTORY }}/MQTTnet.EventBus.Serilog.${{ github.event.inputs.packageVersion }}.nupkg ${{ steps.push-command.outputs.PARAMS }}
         dotnet nuget push ${{ env.PACKAGE_OUTPUT_DIRECTORY }}/MQTTnet.EventBus.Microsoft.Extensions.Logging.${{ github.event.inputs.packageVersion }}.nupkg ${{ steps.push-command.outputs.PARAMS }}
+        dotnet nuget push ${{ env.PACKAGE_OUTPUT_DIRECTORY }}/MQTTnet.EventBus.Newtonsoft.Json.${{ github.event.inputs.packageVersion }}.nupkg ${{ steps.push-command.outputs.PARAMS }}
