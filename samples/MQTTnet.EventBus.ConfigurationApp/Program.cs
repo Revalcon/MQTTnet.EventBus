@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MQTTnet.EventBus.Serializers;
-using MQTTnet.EventBus.Serializers.String;
 using Serilog;
 using System;
 using System.Threading.Tasks;
@@ -35,7 +34,7 @@ namespace MQTTnet.EventBus.ConfigurationApp
                 {
                     eventBuilder.AddConsumer<MyEvent, MyConsumer>(cfg =>
                     {
-                        cfg.UseConverter<MyConverter>();
+                        cfg.UseJsonConverter();
                         cfg.UseMessageBuilder(builder => builder.WithRetainFlag());
                     });
                 });
@@ -53,16 +52,9 @@ namespace MQTTnet.EventBus.ConfigurationApp
 
     public class MyConverter : IEventConverter<MyEvent>
     {
-        private IStringConverter _stringConverter;
-
-        public MyConverter(IStringConverter stringConverter)
-        {
-            _stringConverter = stringConverter;
-        }
-
         public MyEvent Deserialize(byte[] value)
         {
-            string data = _stringConverter.Deserialize(value);
+            string data = TextConvert.ToUTF8String(value);
             if (!int.TryParse(data, out int status))
                 status = -1;
 
@@ -72,7 +64,7 @@ namespace MQTTnet.EventBus.ConfigurationApp
         public byte[] Serialize(MyEvent value)
         {
             string data = string.Format($"{value.Status}{value.Status}");
-            return _stringConverter.Serialize(data);
+            return TextConvert.ToUTF8ByteArray(data);
         }
     }
 
