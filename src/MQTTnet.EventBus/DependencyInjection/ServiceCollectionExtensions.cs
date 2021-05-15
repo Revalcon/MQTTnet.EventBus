@@ -2,6 +2,7 @@
 using MQTTnet.EventBus;
 using MQTTnet.EventBus.DependencyInjection.Builder;
 using MQTTnet.EventBus.DependencyInjection.Builder.Impl;
+using MQTTnet.EventBus.Impl;
 using MQTTnet.EventBus.Reflection;
 using MQTTnet.EventBus.Serializers.Text;
 using System;
@@ -9,11 +10,6 @@ using System.Collections.Generic;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    internal class TempreryData
-    {
-        public bool hasLogger;
-    }
-
     public static class ServiceCollectionExtensions
     {
         public static IServicesBuilder AddEvenets(this IServicesBuilder serviceBuilder, Action<IEventOptionsBuilder> configurator)
@@ -30,7 +26,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
 
                 services.AddSingleton(p => {
-                    StaticCache.EventProvider = new EventProvider(p, eventOptions);
+                    StaticCache.EventProvider = new EventProvider(p, p.GetRequiredService<ITopicPattenBuilder>(), eventOptions);
                     return StaticCache.EventProvider;
                 });
             }, ServiceType.Event);
@@ -67,7 +63,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddSingleton<IMqttPersisterConnection, DefaultMqttPersisterConnection>()
                 .AddSingleton<IEventBusClientProvider, EventBusClientProvider>()
                 .AddSingleton<ISubscriptionsManager, InMemorySubscriptionsManager>()
-                .AddSingleton<IConsumeMethodInvoker, ConsumeMethodInvoker>();
+                .AddSingleton<IConsumeMethodInvoker, ConsumeMethodInvoker>()
+                .AddSingleton<ITopicPattenBuilder, TopicPattenBuilder>();
 
         public static IServicesBuilder AddLogger(this IServicesBuilder builder, Action<ILoggerOptionsBuilder> loggerConfigurator)
         {

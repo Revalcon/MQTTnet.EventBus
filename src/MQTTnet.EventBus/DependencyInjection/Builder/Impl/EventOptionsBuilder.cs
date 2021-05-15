@@ -12,19 +12,18 @@ namespace MQTTnet.EventBus.DependencyInjection.Builder.Impl
             _consumerOptions = new HashSet<EventOptions>(ComparersManager.EventOptions);
         }
 
-        public IEventOptionsBuilder AddConsumer<TEvent, TConsumer>(string eventName, Action<IMessageBuilder<TEvent>> convertorConfigurator)
-            where TConsumer : IConsumer<TEvent>
+        public IEventOptionsBuilder AddEventMapping<TEvent>(string eventName, Action<IEventMappingBuilder<TEvent>> mappingConfigurator)
         {
             var options = new EventOptions(eventName)
             {
-                ConsumerType = typeof(TConsumer),
                 EventType = typeof(TEvent)
             };
 
-            var builder = new MessageBuilder<TEvent>(options);
-            convertorConfigurator.Invoke(builder);
+            var mappingBuilder = new EventMappingBuilder<TEvent>(options);
+            mappingConfigurator.Invoke(mappingBuilder);
 
             _consumerOptions.Add(options);
+
             return this;
         }
 

@@ -7,13 +7,12 @@ using MQTTnet.EventBus.Logger;
 using MQTTnet.EventBus.Reflection;
 using MQTTnet.Exceptions;
 using Polly;
-using Polly.Retry;
 using System;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
-namespace MQTTnet.EventBus
+namespace MQTTnet.EventBus.Impl
 {
     public class MqttEventBus : IEventBus, IDisposable
     {
@@ -65,8 +64,8 @@ namespace MQTTnet.EventBus
                 connection.TryConnect();
             }
 
-            var policy = RetryPolicy.Handle<SocketException>()
-                .Or<MqttCommunicationException>()
+            var policy = Policy
+                .Handle<SocketException>().Or<MqttCommunicationException>().Or<Exception>()
                 .WaitAndRetry(_retryCount, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), (ex, time) =>
                 {
                     _logger.LogWarning(ex, $"Could not publish topic: {message?.Topic} after {time.TotalSeconds:n1}s ({ex.Message})");
@@ -89,17 +88,9 @@ namespace MQTTnet.EventBus
             {
                 foreach (var subscription in subscriptions)
                 {
-                    using (var scope = _scopeFactory.CreateScope())
-                    {
-                        var consumer = scope.ServiceProvider.GetService(subscription.ConsumerType);
-                        if (consumer == null)
-                            continue;
-
-                        var converterType = _eventProvider.GetConverterType(subscription.EventName);
-                        var converter = scope.ServiceProvider.GetService(converterType);
-                        await Task.Yield();
-                        await _consumeMethodInvoker.InvokeAsync(consumer, subscription.EventType, converter, eventArgs);
-                    }
+                    using var scope = _scopeFactory.CreateScope();
+                    await Task.Yield();
+                    await _consumeMethodInvoker.InvokeAsync(scope.ServiceProvider, subscription, eventArgs);
                 }
             }
         }
@@ -143,28 +134,9 @@ namespace MQTTnet.EventBus
             return Task.Factory.StartNew(() => new MqttClientUnsubscribeResult());
         }
 
-
-        //public Task<MqttClientSubscribeResult> SubscribeAsync<TConsumer>(string topic)
-        //    where TConsumer : IConsumer
-        //{
-        //    _logger.LogInformation($"Subscribing to topic {topic} with {typeof(TConsumer).Name}");
-
-        //    var containsKey = _subsManager.HasSubscriptionsForEvent(topic);
-        //    if (!containsKey)
-        //    {
-        //        if (_eventBusClientProvider.RegisterMessageHandler(topic, Consumer_Received, out var connection))
-        //        {
-        //            _subsManager.AddSubscription<TConsumer>(topic);
-        //            return connection.GetClient().SubscribeAsync(topic);
-        //        }
-        //    }
-
-        //    return Task.Run(() => new MqttClientSubscribeResult());
-        //}
-
         public Task<MqttClientSubscribeResult[]> ReSubscribeAllTopicsAsync()
         {
-            var aaa = _subsManager.AllTopics().Select(topic =>
+            var subscribers = _subsManager.AllTopics().Select(topic =>
             {
                 var connection = _eventBusClientProvider.GetOrCreateMqttConnection(topic);
                 if (!connection.IsConnected)
@@ -179,22 +151,7 @@ namespace MQTTnet.EventBus
                     return connection.GetClient().SubscribeAsync(topic);
             });
 
-            return Task.WhenAll(aaa);
+            return Task.WhenAll(subscribers);
         }
-
-        //public Task<MqttClientUnsubscribeResult> UnsubscribeAsync<TConsumer>(string topic)
-        //    where TConsumer : IConsumer
-        //{
-        //    _logger.LogInformation($"Subscribing to topic {topic} with {typeof(TConsumer).Name}");
-
-        //    var containsKey = _subsManager.HasSubscriptionsForEvent(topic);
-        //    if (!containsKey)
-        //    {
-        //        _subsManager.RemoveSubscription<TConsumer>(topic);
-        //        return _eventBusClientProvider.RemoveSubscriptionAsync(topic);
-        //    }
-
-        //    return Task.Factory.StartNew(() => new MqttClientUnsubscribeResult());
-        //}
     }
 }

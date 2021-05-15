@@ -4,6 +4,7 @@
     {
         Logger,
         Event,
+        Converter,
         Custom
     }
 }

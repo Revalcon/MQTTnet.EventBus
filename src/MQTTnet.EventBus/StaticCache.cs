@@ -1,4 +1,6 @@
-﻿namespace MQTTnet.EventBus
+﻿using MQTTnet.EventBus.Impl;
+
+namespace MQTTnet.EventBus
 {
     public static class StaticCache
     {

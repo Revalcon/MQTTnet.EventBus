@@ -4,29 +4,17 @@ namespace MQTTnet.EventBus.DependencyInjection.Builder
 {
     public interface IEventOptionsBuilder
     {
-        IEventOptionsBuilder AddConsumer<TEvent, TConsumer>(string eventName, Action<IMessageBuilder<TEvent>> convertorConfigurator) 
-            where TConsumer : IConsumer<TEvent>;
+        IEventOptionsBuilder AddEventMapping<TEvent>(string eventName, Action<IEventMappingBuilder<TEvent>> mappingConfigurator);
     }
 }
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    using MQTTnet.EventBus;
     using MQTTnet.EventBus.DependencyInjection.Builder;
 
-    public static class IEventOptionsBuilderExtensions
+    public static class EventOptionsBuilderExtensions
     {
-        public static IEventOptionsBuilder AddConsumer<TEvent, TConsumer>(this IEventOptionsBuilder builder, Action<IMessageBuilder<TEvent>> convertorConfigurator)
-            where TConsumer : IConsumer<TEvent>
-            => builder.AddConsumer<TEvent, TConsumer>(typeof(TEvent).Name, convertorConfigurator);
-
-        public static IEventOptionsBuilder AddConsumer<TConsumer>(this IEventOptionsBuilder builder, string eventName, Action<IMessageBuilder<string>> convertorConfigurator = null)
-                where TConsumer : IConsumer<string>
-        {
-            if(convertorConfigurator == null)
-                convertorConfigurator = cfg => cfg.UseTextConverter();
-
-            return builder.AddConsumer<string, TConsumer>(eventName, convertorConfigurator);
-        }
+        public static IEventOptionsBuilder AddEventMapping<TEvent>(this IEventOptionsBuilder builder, Action<IEventMappingBuilder<TEvent>> mappingConfigurator)
+            => builder.AddEventMapping(typeof(TEvent).Name, mappingConfigurator);
     }
 }

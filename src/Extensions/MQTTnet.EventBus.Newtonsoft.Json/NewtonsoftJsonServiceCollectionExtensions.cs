@@ -5,7 +5,7 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class NewtonsoftJsonServiceCollectionExtensions
     {
-        public static IMessageBuilder<TEvent> UseJsonConverter<TEvent>(this IMessageBuilder<TEvent> builder)
+        public static IEventMappingBuilder<TEvent> UseJsonConverter<TEvent>(this IEventMappingBuilder<TEvent> builder)
         {
             builder.UseConverter<NewtonsoftJsonConverter<TEvent>>();
             return builder;

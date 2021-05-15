@@ -2,6 +2,8 @@
 using MQTTnet.EventBus.Serializers;
 using Serilog;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace MQTTnet.EventBus.ConfigurationApp
@@ -16,6 +18,8 @@ namespace MQTTnet.EventBus.ConfigurationApp
 
             var eventBus = _provider.GetService<IEventBus>();
             await eventBus.SubscribeAsync<MyEvent>("/state/#");
+
+            //await eventBus.PublishAsync(new MyEvent { }, "/state/garni/49");
 
             Console.ReadLine();
         }
@@ -32,9 +36,11 @@ namespace MQTTnet.EventBus.ConfigurationApp
 
                 service.AddEvenets(eventBuilder =>
                 {
-                    eventBuilder.AddConsumer<MyEvent, MyConsumer>(cfg =>
+                    eventBuilder.AddEventMapping<MyEvent>(cfg =>
                     {
-                        cfg.UseJsonConverter();
+                        cfg.AddConsumer<MyConsumer>();
+                        cfg.UseConverter<MyConverter>();
+                        cfg.UseTopicPattern(ev => $"/State/{ev.Territory}/{ev.NodeId}");
                         cfg.UseMessageBuilder(builder => builder.WithRetainFlag());
                     });
                 });
@@ -70,6 +76,8 @@ namespace MQTTnet.EventBus.ConfigurationApp
 
     public class MyEvent
     {
+        public string NodeId { get; set; }
+        public string Territory { get; set; }
         public int Status { get; set; }
     }
 
@@ -80,7 +88,7 @@ namespace MQTTnet.EventBus.ConfigurationApp
             try
             {
                 var status = context.EventArg.Status;
-                Console.WriteLine($"{context.Message.Topic} Status: {status}");
+                Console.WriteLine($"{context.Message.Topic} Status: {status}, Territory: {context.EventArg.Territory}, NodeId: {context.EventArg.NodeId}");
             }
             catch (Exception ex)
             {
