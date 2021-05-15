@@ -2,6 +2,8 @@
 using MQTTnet.EventBus.Serializers;
 using Serilog;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace MQTTnet.EventBus.ConfigurationApp
@@ -17,6 +19,8 @@ namespace MQTTnet.EventBus.ConfigurationApp
             var eventBus = _provider.GetService<IEventBus>();
             await eventBus.SubscribeAsync<MyEvent>("/state/#");
 
+            await eventBus.PublishAsync(new MyEvent { }, "/state/garni/49");
+
             Console.ReadLine();
         }
 
@@ -28,13 +32,15 @@ namespace MQTTnet.EventBus.ConfigurationApp
             {
                 host
                     .WithClientId($"Artyom Test {Guid.NewGuid()}")
-                    .WithTcpServer("IP Address", port: 1883);
+                    .WithTcpServer("5.189.161.209", port: 1883);
 
                 service.AddEvenets(eventBuilder =>
                 {
-                    eventBuilder.AddConsumer<MyEvent, MyConsumer>(cfg =>
+                    eventBuilder.AddEventMapping<MyEvent>(cfg =>
                     {
-                        cfg.UseJsonConverter();
+                        cfg.AddConsumer<MyConsumer>();
+                        cfg.UseConverter<MyConverter>();
+                        cfg.UseTopicPattern(ev => $"/State/{ev.Territory}/{ev.NodeId}");
                         cfg.UseMessageBuilder(builder => builder.WithRetainFlag());
                     });
                 });
@@ -70,6 +76,8 @@ namespace MQTTnet.EventBus.ConfigurationApp
 
     public class MyEvent
     {
+        public int NodeId { get; set; }
+        public string Territory { get; set; }
         public int Status { get; set; }
     }
 

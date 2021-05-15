@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace MQTTnet.EventBus
+namespace MQTTnet.EventBus.Impl
 {
     public partial class InMemorySubscriptionsManager : ISubscriptionsManager
     {
