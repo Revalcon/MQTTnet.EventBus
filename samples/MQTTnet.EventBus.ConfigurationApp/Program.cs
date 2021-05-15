@@ -19,7 +19,7 @@ namespace MQTTnet.EventBus.ConfigurationApp
             var eventBus = _provider.GetService<IEventBus>();
             await eventBus.SubscribeAsync<MyEvent>("/state/#");
 
-            await eventBus.PublishAsync(new MyEvent { }, "/state/garni/49");
+            //await eventBus.PublishAsync(new MyEvent { }, "/state/garni/49");
 
             Console.ReadLine();
         }
@@ -32,7 +32,7 @@ namespace MQTTnet.EventBus.ConfigurationApp
             {
                 host
                     .WithClientId($"Artyom Test {Guid.NewGuid()}")
-                    .WithTcpServer("5.189.161.209", port: 1883);
+                    .WithTcpServer("IP Address", port: 1883);
 
                 service.AddEvenets(eventBuilder =>
                 {
@@ -76,7 +76,7 @@ namespace MQTTnet.EventBus.ConfigurationApp
 
     public class MyEvent
     {
-        public int NodeId { get; set; }
+        public string NodeId { get; set; }
         public string Territory { get; set; }
         public int Status { get; set; }
     }
@@ -88,7 +88,7 @@ namespace MQTTnet.EventBus.ConfigurationApp
             try
             {
                 var status = context.EventArg.Status;
-                Console.WriteLine($"{context.Message.Topic} Status: {status}");
+                Console.WriteLine($"{context.Message.Topic} Status: {status}, Territory: {context.EventArg.Territory}, NodeId: {context.EventArg.NodeId}");
             }
             catch (Exception ex)
             {

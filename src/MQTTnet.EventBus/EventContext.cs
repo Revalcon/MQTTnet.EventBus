@@ -1,7 +1,4 @@
-﻿using MQTTnet.EventBus.Serializers;
-using System;
-
-namespace MQTTnet.EventBus
+﻿namespace MQTTnet.EventBus
 {
     public class EventContext
     {
@@ -17,20 +14,14 @@ namespace MQTTnet.EventBus
         public MqttApplicationMessage Message => message.ApplicationMessage;
     }
 
-    public class EventContext<T> : EventContext
+    public class EventContext<TEvent> : EventContext
     {
-        private readonly Lazy<T> _lazyConverter;
-
-        public EventContext(IEventDeserializer<object> deserializer, MqttApplicationMessageReceivedEventArgs message)
-            : this(new Lazy<T>(() => ((IEventDeserializer<T>)deserializer).Deserialize(message?.ApplicationMessage?.Payload)), message)
-        { }
-
-        public EventContext(Lazy<T> lazyConverter, MqttApplicationMessageReceivedEventArgs message)
+        public EventContext(TEvent eventArg, MqttApplicationMessageReceivedEventArgs message)
             : base(message)
         {
-            _lazyConverter = lazyConverter;
+            EventArg = eventArg;
         }
 
-        public T EventArg => _lazyConverter.Value;
+        public TEvent EventArg { get; }
     }
 }

@@ -10,29 +10,47 @@ namespace MQTTnet.EventBus.Impl
     {
         private readonly IDictionary<string, EventCreater> _eventCreaters;
         private readonly IDictionary<string, EventOptions> _eventOptions;
+        private readonly IDictionary<string, Func<object, string>> _topicCreaters;
+        private readonly ITopicPattenBuilder _topicPattenBuilder;
 
-        public EventProvider() : this(null, new HashSet<EventOptions>())
-        { }
+        public EventProvider() : this(null, null, new HashSet<EventOptions>()) { }
 
-        public EventProvider(IServiceProvider serviceProvider, HashSet<EventOptions> eventOptions)
+        public EventProvider(IServiceProvider serviceProvider, ITopicPattenBuilder topicPattenBuilder, HashSet<EventOptions> eventOptions)
         {
+            _topicPattenBuilder = topicPattenBuilder;
             _eventCreaters = eventOptions.ToDictionary(p => p.EventName, p => EventCreater.New(serviceProvider, p));
             _eventOptions = eventOptions.ToDictionary(p => p.EventName);
-        }
-
-        public MqttApplicationMessage CreateMessage<TEven>(TEven @event, string topic)
-        {
-            var eventType = @event.GetType();
-            var options = _eventOptions.Values.FirstOrDefault(p => p.EventType == eventType);
-            if (options == null)
-                throw new Exception("");
-
-            return CreateMessage(options.EventName, @event, topic);
+            _topicCreaters = eventOptions.ToDictionary(p => p.EventName, p => topicPattenBuilder.CreateTopic(p.EventType, p.TopicPattern).Compile());
         }
 
         public MqttApplicationMessage CreateMessage(string eventName, object @event, string topic)
         {
             return _eventCreaters[eventName].CreateMqttApplicationMessage(@event, topic);
+        }
+
+        public string GetTopic(string eventName, object @event)
+        {
+            if (_topicCreaters.TryGetValue(eventName, out var topicCreater))
+                return topicCreater.Invoke(@event);
+            return string.Empty;
+        }
+
+        public bool SetTopicInfo(string eventName, object @event, string topic)
+        {
+            try
+            {
+                if (_eventOptions.TryGetValue(eventName, out var opions))
+                {
+                    _topicPattenBuilder.SetData(@event, opions.TopicPattern, topic);
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                //TODO [Logger] [Artyom Tonoyan] [15/05/2021]: Add log
+            }
+            
+            return false;
         }
 
         public Type GetConsumerType(string eventName)

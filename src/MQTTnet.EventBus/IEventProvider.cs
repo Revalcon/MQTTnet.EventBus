@@ -1,21 +1,33 @@
-﻿using MQTTnet.EventBus.Serializers;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
+﻿using System;
 
 namespace MQTTnet.EventBus
 {
     public interface IEventProvider
     {
+        bool SetTopicInfo(string eventName, object @event, string topic);
+        string GetTopic(string eventName, object @event);
         Type GetConverterType(string eventName);
         Type GetConsumerType(string eventName);
         MqttApplicationMessage CreateMessage(string eventName, object @event, string topic);
-        MqttApplicationMessage CreateMessage<TEven>(TEven @event, string topic);
     }
 
     public static class IEventProviderExtensions
     {
+
+
+        public static MqttApplicationMessage CreateMessage<TEvent>(this IEventProvider eventProvider, string eventName, TEvent @event)
+        {
+            string topic = eventProvider.GetTopic(@event);
+            return eventProvider.CreateMessage(eventName, @event, topic);
+        }
+
+        public static MqttApplicationMessage CreateMessage(this IEventProvider eventProvider, object @event)
+            => CreateMessage(eventProvider, @event.GetType().Name, @event);
+
+        public static bool SetTopicInfo(this IEventProvider eventProvider, object @event, string topic)
+            => eventProvider.SetTopicInfo(@event.GetType().Name, @event, topic);
+        public static string GetTopic(this IEventProvider eventProvider, object @event)
+            => eventProvider.GetTopic(@event.GetType().Name, @event);
         public static Type GetConsumerType(this IEventProvider eventProvider, Type eventType)
             => eventProvider.GetConsumerType(eventType.Name);
         public static MqttApplicationMessage CreateMessage(this IEventProvider eventProvider, object @event, string topic)

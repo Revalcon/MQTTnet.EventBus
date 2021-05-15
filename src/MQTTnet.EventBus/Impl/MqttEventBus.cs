@@ -88,17 +88,9 @@ namespace MQTTnet.EventBus.Impl
             {
                 foreach (var subscription in subscriptions)
                 {
-                    using (var scope = _scopeFactory.CreateScope())
-                    {
-                        var consumer = scope.ServiceProvider.GetService(subscription.ConsumerType);
-                        if (consumer == null)
-                            continue;
-
-                        var converterType = _eventProvider.GetConverterType(subscription.EventName);
-                        var converter = scope.ServiceProvider.GetService(converterType);
-                        await Task.Yield();
-                        await _consumeMethodInvoker.InvokeAsync(consumer, subscription.EventType, converter, eventArgs);
-                    }
+                    using var scope = _scopeFactory.CreateScope();
+                    await Task.Yield();
+                    await _consumeMethodInvoker.InvokeAsync(scope.ServiceProvider, subscription, eventArgs);
                 }
             }
         }
