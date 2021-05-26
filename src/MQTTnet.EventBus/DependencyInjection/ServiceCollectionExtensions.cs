@@ -21,8 +21,11 @@ namespace Microsoft.Extensions.DependencyInjection
                 var eventOptions = eventBuilder.Build();
                 foreach (var o in eventOptions)
                 {
-                    services.AddScoped(o.ConsumerType);
-                    services.AddScoped(o.ConverterType);
+                    if (!o.ConsumerType.IsInterface)
+                        services.AddScoped(o.ConsumerType);
+
+                    if (!o.ConverterType.IsInterface)
+                        services.AddScoped(o.ConverterType);
                 }
 
                 services.AddSingleton(p => {
