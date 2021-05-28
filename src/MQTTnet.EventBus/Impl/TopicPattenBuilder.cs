@@ -96,6 +96,9 @@ namespace MQTTnet.EventBus.Impl
 
         public IEnumerable<TopicPatternInfo> Parse(string topicPattern)
         {
+            if (string.IsNullOrEmpty(topicPattern))
+                return Enumerable.Empty< TopicPatternInfo>();
+
             return topicPattern.Trim('/').Split('/').Select(p =>
             {
                 if (p.StartsWith("{") && p.EndsWith("}"))
