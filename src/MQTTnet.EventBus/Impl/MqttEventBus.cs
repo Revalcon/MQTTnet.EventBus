@@ -103,8 +103,8 @@ namespace MQTTnet.EventBus.Impl
 
         public Task<MqttClientSubscribeResult> SubscribeAsync(SubscriptionInfo subscriptionInfo)
         {
-            string topic = subscriptionInfo.Topic;
-            _logger.LogInformation($"Subscribing to topic {topic} with {subscriptionInfo.ConsumerType.Name}");
+            string topic = subscriptionInfo?.Topic;
+            _logger.LogInformation($"Subscribing to topic {topic} with {subscriptionInfo?.ConsumerType?.Name}");
 
             var containsKey = _subsManager.HasSubscriptionsForEvent(topic);
             if (!containsKey)
@@ -121,8 +121,8 @@ namespace MQTTnet.EventBus.Impl
 
         public Task<MqttClientUnsubscribeResult> UnsubscribeAsync(SubscriptionInfo subscriptionInfo)
         {
-            var topic = subscriptionInfo.Topic;
-            _logger.LogInformation($"Subscribing to topic {topic} with {subscriptionInfo.ConsumerType.Name}");
+            var topic = subscriptionInfo?.Topic;
+            _logger.LogInformation($"Unsubscribing to topic {topic} with {subscriptionInfo?.ConsumerType?.Name}");
 
             var containsKey = _subsManager.HasSubscriptionsForEvent(topic);
             if (!containsKey)
