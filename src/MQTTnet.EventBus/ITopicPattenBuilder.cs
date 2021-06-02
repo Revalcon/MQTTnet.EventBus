@@ -12,6 +12,7 @@ namespace MQTTnet.EventBus
 
     public interface ITopicPattenBuilder
     {
+        string GetTopicEntity(string topicPattern, string topic, string name);
         void SetData(object model, string topicPattern, string topic);
         Expression<Func<object, string>> CreateTopic(Type eventType, string topicPattern);
         Expression<Func<TEvent, string>> CreateTopic<TEvent>(string topicPattern);
