@@ -1,5 +1,7 @@
-﻿using MQTTnet.EventBus.Serializers;
+﻿using MQTTnet.EventBus.Reflection;
+using MQTTnet.EventBus.Serializers;
 using System;
+using System.Linq.Expressions;
 
 namespace MQTTnet.EventBus.DependencyInjection.Builder.Impl
 {
@@ -36,6 +38,13 @@ namespace MQTTnet.EventBus.DependencyInjection.Builder.Impl
         {
             _eventOptions.MessageCreater = messageBuilderConfigurator;
             return this;
+        }
+
+        public IEventMappingBuilder<TEvent> UseTopicPattern<TTopicInfo>(Expression<Func<TTopicInfo, string>> patternExp)
+        {
+            string pattern = ReflectionHelper.CreateTopicPattern(patternExp);
+            _eventOptions.TopicInfoType = typeof(TTopicInfo);
+            return UseTopicPattern(pattern);
         }
     }
 }

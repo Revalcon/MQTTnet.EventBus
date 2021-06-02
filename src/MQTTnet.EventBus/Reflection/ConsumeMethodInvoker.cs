@@ -19,10 +19,10 @@ namespace MQTTnet.EventBus.Reflection
 
             var message = messageReceived.ApplicationMessage;
             var eventArg = converter.Deserialize(message.Payload);
-            _eventProvider.SetTopicInfo(subscriptionInfo.EventName, eventArg, message.Topic);
+            //_eventProvider.SetTopicInfo(subscriptionInfo.EventName, eventArg, message.Topic);
 
             var contextType = typeof(EventContext<>).MakeGenericType(subscriptionInfo.EventType);
-            var context = Activator.CreateInstance(contextType, new object[] { eventArg, messageReceived });
+            var context = Activator.CreateInstance(contextType, new object[] { eventArg, messageReceived, _eventProvider });
 
             var consumer = serviceProvider.GetService(subscriptionInfo.ConsumerType);
             return (Task)consumer.GetType()

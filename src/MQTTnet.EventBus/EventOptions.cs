@@ -13,6 +13,7 @@ namespace MQTTnet.EventBus
         public string EventName { get; set; }
         public string TopicPattern { get; set; }
         public Type EventType { get; set; }
+        public Type TopicInfoType { get; set; }
         public Type ConsumerType { get; set; }
         public Type ConverterType { get; set; }
         public Action<MqttApplicationMessageBuilder> MessageCreater { get; set; }

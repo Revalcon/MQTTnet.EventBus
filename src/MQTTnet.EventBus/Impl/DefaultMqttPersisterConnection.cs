@@ -46,7 +46,7 @@ namespace MQTTnet.EventBus.Impl
 
             lock (_syncObject)
             {
-                var policy = RetryPolicy.Handle<SocketException>()
+                var policy = Policy.Handle<SocketException>()
                     .Or<MqttProtocolViolationException>()
                     .WaitAndRetry(_retryCount, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), (ex, time) =>
                     {

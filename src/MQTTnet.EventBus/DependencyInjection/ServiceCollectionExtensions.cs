@@ -3,6 +3,7 @@ using MQTTnet.EventBus;
 using MQTTnet.EventBus.DependencyInjection.Builder;
 using MQTTnet.EventBus.DependencyInjection.Builder.Impl;
 using MQTTnet.EventBus.Impl;
+using MQTTnet.EventBus.Logger;
 using MQTTnet.EventBus.Reflection;
 using MQTTnet.EventBus.Serializers.Text;
 using System;
@@ -28,8 +29,12 @@ namespace Microsoft.Extensions.DependencyInjection
                         services.AddScoped(o.ConverterType);
                 }
 
-                services.AddSingleton(p => {
-                    StaticCache.EventProvider = new EventProvider(p, p.GetRequiredService<ITopicPattenBuilder>(), eventOptions);
+                services.AddSingleton(serviceProvider => {
+                    StaticCache.EventProvider = new EventProvider(
+                        serviceProvider, 
+                        serviceProvider.GetRequiredService<ITopicPattenBuilder>(), 
+                        eventOptions, 
+                        serviceProvider.GetRequiredService<IEventBusLogger<EventProvider>>());
                     return StaticCache.EventProvider;
                 });
             }, ServiceType.Event);

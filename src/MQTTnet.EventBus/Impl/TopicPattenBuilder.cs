@@ -9,6 +9,26 @@ namespace MQTTnet.EventBus.Impl
 {
     public class TopicPattenBuilder : ITopicPattenBuilder
     {
+        public string GetTopicEntity(string topicPattern, string topic, string name)
+        {
+            int index = 0;
+            var topicInfo = Parse(topic).ToArray();
+            foreach (var patterntInfo in Parse(topicPattern))
+            {
+                if (!patterntInfo.IsConst)
+                {
+                    if (patterntInfo.Name == name)
+                        return topicInfo[index].Name;
+                }
+
+                index++;
+                if (index == topicInfo.Length)
+                    break;
+            }
+
+            return null;
+        }
+
         public void SetData(object model, string topicPattern, string topic)
         {
             var modelType = model.GetType();
@@ -20,19 +40,24 @@ namespace MQTTnet.EventBus.Impl
                 if (!patterntInfo.IsConst)
                 {
                     var pi = modelType.GetProperty(patterntInfo.Name);
-                    var info = topicInfo[index];
-                    if (pi.PropertyType == typeof(string))
+                    if (pi.SetMethod != null)
                     {
-                        pi.SetValue(model, info.Name);
-                    }
-                    else
-                    {
-                        var value = Convert.ChangeType(info.Name, pi.PropertyType);
-                        pi.SetValue(model, value);
+                        var info = topicInfo[index];
+                        if (pi.PropertyType == typeof(string))
+                        {
+                            pi.SetValue(model, info.Name);
+                        }
+                        else
+                        {
+                            var value = Convert.ChangeType(info.Name, pi.PropertyType);
+                            pi.SetValue(model, value);
+                        }
                     }
                 }
 
                 index++;
+                if (index == topicInfo.Length)
+                    return;
             }
         }
 
