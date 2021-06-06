@@ -31,14 +31,6 @@ namespace MQTTnet.EventBus.Impl
             _logger = logger;
         }
 
-        public MqttApplicationMessage CreateMessage(object @event, string topic)
-        {
-            if (_eventNames.TryGetValue(@event.GetType(), out string eventName))
-                return CreateMessage(eventName, @event, topic);
-
-            throw new EventNotFoundException(@event);
-        }
-
         public MqttApplicationMessage CreateMessage(string eventName, object @event, string topic)
         {
             if (_eventCreaters.TryGetValue(eventName, out var eventCreater))
@@ -47,10 +39,10 @@ namespace MQTTnet.EventBus.Impl
             throw new EventNotFoundException(eventName);
         }
 
-        public string GetTopic(string eventName, object @event)
+        public string GetTopic(string eventName, object topicInfo)
         {
             if (_topicCreaters.TryGetValue(eventName, out var topicCreater))
-                return topicCreater.Invoke(@event);
+                return topicCreater.Invoke(topicInfo);
             return string.Empty;
         }
 
@@ -132,9 +124,6 @@ namespace MQTTnet.EventBus.Impl
             public MqttApplicationMessage CreateMqttApplicationMessage(object @event, string topic)
             {
                 var data = Serialize(@event);
-
-                DateTime date = DateTime.Now;
-                //date.date
 
                 var builder = new MqttApplicationMessageBuilder();
                 MessageCreater.Invoke(builder);
