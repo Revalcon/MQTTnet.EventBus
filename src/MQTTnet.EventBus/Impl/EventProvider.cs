@@ -14,6 +14,7 @@ namespace MQTTnet.EventBus.Impl
         private readonly IDictionary<string, EventOptions> _eventOptions;
         private readonly IDictionary<Type, string> _eventNames;
         private readonly IDictionary<string, Func<object, string>> _topicCreaters;
+        private readonly IDictionary<string, string> _topics;
         private readonly ITopicPattenBuilder _topicPattenBuilder;
         private readonly IEventBusLogger<EventProvider> _logger;
 
@@ -25,9 +26,15 @@ namespace MQTTnet.EventBus.Impl
             _eventCreaters = eventOptions.ToDictionary(p => p.EventName, p => EventCreater.New(serviceProvider, p));
             _eventOptions = eventOptions.ToDictionary(p => p.EventName);
             _eventNames = eventOptions.ToDictionary(p => p.EventType, p => p.EventName);
+
             _topicCreaters = eventOptions
-                .Where(p => p.TopicInfoType != null)
-                .ToDictionary(p => p.EventName, p => topicPattenBuilder.CreateTopic(p.TopicInfoType, p.TopicPattern).Compile());
+                    .Where(p => p.TopicInfoType != null && _topicPattenBuilder.IsPattern(p.TopicPattern))
+                    .ToDictionary(p => p.EventName, p => topicPattenBuilder.CreateTopicCreater(p.TopicInfoType, p.TopicPattern).Compile());
+
+            _topics = eventOptions
+                .Where(p => !_topicPattenBuilder.IsStaticTopic(p.TopicPattern))
+                .ToDictionary(p => p.EventName, p => p.TopicPattern);
+
             _logger = logger;
         }
 
@@ -37,6 +44,13 @@ namespace MQTTnet.EventBus.Impl
                 return eventCreater.CreateMqttApplicationMessage(@event, topic);
 
             throw new EventNotFoundException(eventName);
+        }
+
+        public string GetTopic(string eventName)
+        {
+            if (_topics.TryGetValue(eventName, out string topic))
+                return topic;
+            return string.Empty;
         }
 
         public string GetTopic(string eventName, object topicInfo)
@@ -126,9 +140,9 @@ namespace MQTTnet.EventBus.Impl
                 var data = Serialize(@event);
 
                 var builder = new MqttApplicationMessageBuilder();
-                MessageCreater.Invoke(builder);
                 builder.WithTopic(topic);
                 builder.WithPayload(data);
+                MessageCreater.Invoke(builder);
 
                 return builder.Build();
             }

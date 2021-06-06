@@ -61,7 +61,7 @@ namespace MQTTnet.EventBus.Impl
             }
         }
 
-        public Expression<Func<object, string>> CreateTopic(Type eventType, string topicPattern)
+        public Expression<Func<object, string>> CreateTopicCreater(Type eventType, string topicPattern)
         {
             var pEvent = Expression.Parameter(typeof(object), "ev");
 
@@ -122,7 +122,7 @@ namespace MQTTnet.EventBus.Impl
         public IEnumerable<TopicPatternInfo> Parse(string topicPattern)
         {
             if (string.IsNullOrEmpty(topicPattern))
-                return Enumerable.Empty< TopicPatternInfo>();
+                return Enumerable.Empty<TopicPatternInfo>();
 
             return topicPattern.Trim('/').Split('/').Select(p =>
             {
