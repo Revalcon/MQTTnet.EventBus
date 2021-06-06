@@ -15,11 +15,11 @@ namespace MQTTnet.EventBus
 
     public static class EventBusExtensions
     {
-        public static Task<MqttClientPublishResult> PublishAsync<TEvent>(this IEventBus eventBus, TEvent @event)
-            => eventBus.PublishAsync(StaticCache.EventProvider.CreateMessage(@event, StaticCache.EventProvider.GetTopic(@event)));
-
-        public static Task<MqttClientPublishResult> PublishAsync<TEvent>(this IEventBus eventBus, TEvent @event, string topic)
+        public static Task<MqttClientPublishResult> PublishAsync(this IEventBus eventBus, object @event, string topic)
             => eventBus.PublishAsync(StaticCache.EventProvider.CreateMessage(@event, topic));
+
+        public static Task<MqttClientPublishResult> PublishAsync(this IEventBus eventBus, object @event, object topicInfo)
+            => eventBus.PublishAsync(StaticCache.EventProvider.CreateMessage(@event, StaticCache.EventProvider.GetTopic(@event, topicInfo)));
 
         public static Task<MqttClientSubscribeResult> SubscribeAsync<TEvent>(this IEventBus eventBus, string topic)
             => eventBus.SubscribeAsync(StaticCache.EventProvider.CreateSubscriptionInfo<TEvent>(topic));
