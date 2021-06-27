@@ -20,12 +20,12 @@ namespace MQTTnet.EventBus.Impl
         private readonly ISubscriptionsManager _subsManager;
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IConsumeMethodInvoker _consumeMethodInvoker;
-        private readonly IEventBusClientProvider _eventBusClientProvider;
+        private readonly IMqttPersisterConnection _mqttPersisterConnection;
         private readonly IEventProvider _eventProvider;
         private readonly int _retryCount;
 
         public MqttEventBus(
-            IEventBusClientProvider eventBusClientProvider,
+            IMqttPersisterConnection mqttPersisterConnection,
             IEventProvider eventProvider,
             IConsumeMethodInvoker consumeMethodInvoker,
             IEventBusLogger<MqttEventBus> logger,
@@ -33,7 +33,7 @@ namespace MQTTnet.EventBus.Impl
             ISubscriptionsManager subsManager,
             BusOptions busOptions)
         {
-            _eventBusClientProvider = eventBusClientProvider ?? throw new ArgumentNullException(nameof(eventBusClientProvider));
+            _mqttPersisterConnection = mqttPersisterConnection ?? throw new ArgumentNullException(nameof(mqttPersisterConnection));
             _eventProvider = eventProvider;
             _consumeMethodInvoker = consumeMethodInvoker;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -42,47 +42,53 @@ namespace MQTTnet.EventBus.Impl
             _scopeFactory = scopeFactory;
         }
 
-        private async void Consumer_Received(MqttApplicationMessageReceivedEventArgs eventArgs)
+        public async Task<MqttClientPublishResult> PublishAsync(MqttApplicationMessage message)
+        { 
+            var connection = _mqttPersisterConnection;
+            if (!connection.IsConnected)
+            {
+                await connection.TryConnectAsync();
+            }
+
+            try
+            {
+                var policy = Policy
+                    .Handle<SocketException>()
+                    .Or<MqttCommunicationException>()
+                    .Or<Exception>()
+                    .WaitAndRetry(_retryCount, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), (ex, time) =>
+                    {
+                        _logger.LogError(ex, $"Could not publish topic: {message?.Topic} after {time.TotalSeconds:n1}s ({ex.Message})");
+                    });
+
+                return await policy.Execute(() => connection.GetClient().PublishAsync(message));
+            }
+            catch { }
+
+            return new MqttClientPublishResult();
+        }
+
+        private async Task MessageReceivedAsync(MqttApplicationMessageReceivedEventArgs eventArgs)
         {
             string topic = eventArgs?.ApplicationMessage?.Topic;
             try
             {
-                _logger.LogTrace($"Processing Mqtt topic: {topic}");
+                _logger.LogInformation($"Processing Mqtt topic: \"{topic}\"");
                 await ProcessEvent(eventArgs);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, $"----- ERROR Processing topic \"{topic}\"");
+                _logger.LogWarning(ex, $"Error Processing topic \"{topic}\"");
             }
-        }
-
-        public Task<MqttClientPublishResult> PublishAsync(MqttApplicationMessage message)
-        {
-            var connection = _eventBusClientProvider.GetOrCreateMqttConnection(message.Topic);
-            if (!connection.IsConnected)
-            {
-                connection.TryConnect();
-            }
-
-            var policy = Policy
-                .Handle<SocketException>().Or<MqttCommunicationException>().Or<Exception>()
-                .WaitAndRetry(_retryCount, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), (ex, time) =>
-                {
-                    _logger.LogWarning(ex, $"Could not publish topic: {message?.Topic} after {time.TotalSeconds:n1}s ({ex.Message})");
-                });
-
-            return policy.Execute(() => connection.GetClient().PublishAsync(message));
         }
 
         private async Task ProcessEvent(MqttApplicationMessageReceivedEventArgs eventArgs)
         {
             var message = eventArgs.ApplicationMessage;
-            _logger.LogTrace($"Processing Mqtt topic: {message.Topic}");
-
             var subscriptions = _subsManager.GetSubscriptions(message.Topic);
             if (subscriptions.IsNullOrEmpty())
             {
-                _logger.LogWarning($"No subscription for Mqtt topic: {message.Topic}");
+                _logger.LogWarning($"No subscription for Mqtt topic: \"{message.Topic}\"");
             }
             else
             {
@@ -97,11 +103,19 @@ namespace MQTTnet.EventBus.Impl
 
         public void Dispose()
         {
-            _eventBusClientProvider.Dispose();
+            _mqttPersisterConnection.Dispose();
             _subsManager.Clear();
         }
 
-        public Task<MqttClientSubscribeResult> SubscribeAsync(SubscriptionInfo subscriptionInfo)
+        public async Task OnConnectionLostAsync(IMqttPersisterConnection connection, MqttClientConnectionEventArgs args)
+        {
+            if (args.IsReConnected)
+            {
+                var results = await ReSubscribeAllTopicsAsync();
+            }
+        }
+
+        public async Task<MqttClientSubscribeResult> SubscribeAsync(SubscriptionInfo subscriptionInfo)
         {
             string topic = subscriptionInfo?.Topic;
             _logger.LogInformation($"Subscribing to topic {topic} with {subscriptionInfo?.ConsumerType?.Name}");
@@ -109,46 +123,71 @@ namespace MQTTnet.EventBus.Impl
             var containsKey = _subsManager.HasSubscriptionsForEvent(topic);
             if (!containsKey)
             {
-                if (_eventBusClientProvider.RegisterMessageHandler(topic, Consumer_Received, out var connection))
+                var connection = await _mqttPersisterConnection.RegisterMessageHandlerAsync(MessageReceivedAsync);
+                if (connection.IsConnected)
                 {
-                    _subsManager.AddSubscription(subscriptionInfo);
-                    return connection.GetClient().SubscribeAsync(topic);
+                    connection.ClientConnectionChanged += OnConnectionLostAsync;
+                    _subsManager.TryAddSubscription(subscriptionInfo);
+                    return await OnSubscribesAsync(topic);
                 }
             }
 
-            return Task.Factory.StartNew(() => new MqttClientSubscribeResult());
+            return new MqttClientSubscribeResult();
         }
 
-        public Task<MqttClientUnsubscribeResult> UnsubscribeAsync(SubscriptionInfo subscriptionInfo)
+        private async Task<MqttClientSubscribeResult> OnSubscribesAsync(string topic)
         {
-            var topic = subscriptionInfo?.Topic;
+            var connection = _mqttPersisterConnection;
+            if (!connection.IsConnected)
+            {
+                await connection.TryConnectAsync();
+            }
+
+            try
+            {
+                var policy = Policy
+                    .Handle<Exception>()
+                    .WaitAndRetry(_retryCount, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), (ex, time) =>
+                    {
+                        _logger.LogError(ex, $"Could not Subscribe topic: {topic} after {time.TotalSeconds:n1}s ({ex.Message})");
+                    });
+
+                return await policy.Execute(() => connection.GetClient().SubscribeAsync(topic));
+            }
+            catch { }
+
+            return new MqttClientSubscribeResult();
+        }
+
+        public async Task<MqttClientUnsubscribeResult> UnsubscribeAsync(SubscriptionInfo subscriptionInfo)
+        {
+            var connection = _mqttPersisterConnection;
+            if (!connection.IsConnected)
+            {
+                await connection.TryConnectAsync();
+            }
+
+            var topic = subscriptionInfo?.Topic; 
             _logger.LogInformation($"Unsubscribing to topic {topic} with {subscriptionInfo?.ConsumerType?.Name}");
 
             var containsKey = _subsManager.HasSubscriptionsForEvent(topic);
             if (!containsKey)
             {
                 _subsManager.RemoveSubscription(subscriptionInfo);
-                return _eventBusClientProvider.RemoveSubscriptionAsync(topic);
+                return await connection.RemoveSubscriptionAsync(topic);
             }
 
-            return Task.Factory.StartNew(() => new MqttClientUnsubscribeResult());
+            return new MqttClientUnsubscribeResult();
         }
 
         public Task<MqttClientSubscribeResult[]> ReSubscribeAllTopicsAsync()
         {
-            var subscribers = _subsManager.AllTopics().Select(topic =>
+            var subscribers = _subsManager.AllTopics().Select(async topic =>
             {
-                var connection = _eventBusClientProvider.GetOrCreateMqttConnection(topic);
-                if (!connection.IsConnected)
-                {
-                    if (connection.TryConnect())
-                    {
-                        return connection.GetClient().SubscribeAsync(topic);
-                    }
-                    return Task.Run(() => new MqttClientSubscribeResult());
-                }
-                else
-                    return connection.GetClient().SubscribeAsync(topic);
+                var connection = _mqttPersisterConnection;
+                if (connection.IsConnected || await connection.TryConnectAsync())
+                    return await OnSubscribesAsync(topic);
+                return new MqttClientSubscribeResult();
             });
 
             return Task.WhenAll(subscribers);

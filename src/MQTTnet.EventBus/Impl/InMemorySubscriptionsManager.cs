@@ -22,15 +22,17 @@ namespace MQTTnet.EventBus.Impl
         public bool IsEmpty => !_cache.Keys.Any();
         public void Clear() => _cache.Clear();
 
-        public void AddSubscription(SubscriptionInfo subscriptionInfo)
+        public bool TryAddSubscription(SubscriptionInfo subscriptionInfo)
         {
             string eventName = subscriptionInfo.EventType.Name;
             DoAddSubscription(subscriptionInfo);
 
             if (!_eventTypes.Contains(eventName))
             {
-                _eventTypes.Add(eventName);
+                return _eventTypes.Add(eventName);
             }
+
+            return false;
         }
 
         private void DoAddSubscription(SubscriptionInfo subscriptionInfo)

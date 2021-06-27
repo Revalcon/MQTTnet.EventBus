@@ -69,7 +69,6 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddSingleton<IEventBus, MqttEventBus>()
                 .AddSingleton<ITopicComparer, MqttTopicComparer>()
                 .AddSingleton<IMqttPersisterConnection, DefaultMqttPersisterConnection>()
-                .AddSingleton<IEventBusClientProvider, EventBusClientProvider>()
                 .AddSingleton<ISubscriptionsManager, InMemorySubscriptionsManager>()
                 .AddSingleton<IConsumeMethodInvoker, ConsumeMethodInvoker>()
                 .AddSingleton<ITopicPattenBuilder, TopicPattenBuilder>();

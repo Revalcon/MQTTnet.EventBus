@@ -7,7 +7,7 @@ namespace MQTTnet.EventBus
     {
         bool IsEmpty { get; }
         event EventHandler<string> OnEventRemoved;
-        void AddSubscription(SubscriptionInfo subscriptionInfo);
+        bool TryAddSubscription(SubscriptionInfo subscriptionInfo);
         void RemoveSubscription(SubscriptionInfo subscriptionInfo);
         bool HasSubscriptionsForEvent(string topic);
         HashSet<SubscriptionInfo> GetSubscriptions(string topic);
