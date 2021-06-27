@@ -121,7 +121,7 @@ namespace MQTTnet.EventBus.Impl
             await TryConnectAsync(true);
         }
 
-        public Task InvokeClientConnectionChangedMethod(MqttClientConnectionEventArgs args)
+        private Task InvokeClientConnectionChangedMethod(MqttClientConnectionEventArgs args)
         {
             var handler = ClientConnectionChanged;
             if (handler != null)
