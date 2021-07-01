@@ -50,11 +50,11 @@ namespace MQTTnet.EventBus.Impl
 
         public async Task<bool> TryConnectAsync(bool afterDisconnection = false, CancellationToken cancellationToken = default)
         {
+            if (IsConnected)
+                return true;
+
             using (await _asyncLock.WaitAsync(cancellationToken))
             {
-                if (IsConnected)
-                    return true;
-
                 _logger.LogInformation("Mqtt Client is trying to connect");
 
                 try
@@ -114,7 +114,7 @@ namespace MQTTnet.EventBus.Impl
             }
             else
             {
-                _disconnectionCache.Add(_options.ClientId, MqttClientConnectionEventArgs.Disconnected(_options.ClientId));
+                _disconnectionCache.Add(_options.ClientId, MqttClientConnectionEventArgs.Disconnected(_options.ClientId, e.Reason));
                 await InvokeClientConnectionChangedMethod(args);
             }
 

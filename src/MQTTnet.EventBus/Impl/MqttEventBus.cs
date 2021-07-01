@@ -10,6 +10,7 @@ using Polly;
 using System;
 using System.Linq;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MQTTnet.EventBus.Impl
@@ -23,6 +24,7 @@ namespace MQTTnet.EventBus.Impl
         private readonly IMqttPersisterConnection _mqttPersisterConnection;
         private readonly IEventProvider _eventProvider;
         private readonly int _retryCount;
+        private readonly SemaphoreSlim _asyncLocker;
 
         public MqttEventBus(
             IMqttPersisterConnection mqttPersisterConnection,
@@ -34,12 +36,14 @@ namespace MQTTnet.EventBus.Impl
             BusOptions busOptions)
         {
             _mqttPersisterConnection = mqttPersisterConnection ?? throw new ArgumentNullException(nameof(mqttPersisterConnection));
+            _mqttPersisterConnection.ClientConnectionChanged += OnConnectionLostAsync;
             _eventProvider = eventProvider;
             _consumeMethodInvoker = consumeMethodInvoker;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _subsManager = subsManager ?? throw new ArgumentNullException(nameof(ISubscriptionsManager));
             _retryCount = busOptions?.RetryCount ?? 5;
             _scopeFactory = scopeFactory;
+            _asyncLocker = new SemaphoreSlim(busOptions.MaxConcurrentCalls, busOptions.MaxConcurrentCalls);
         }
 
         public async Task<MqttClientPublishResult> PublishAsync(MqttApplicationMessage message)
@@ -70,6 +74,8 @@ namespace MQTTnet.EventBus.Impl
 
         private async Task MessageReceivedAsync(MqttApplicationMessageReceivedEventArgs eventArgs)
         {
+            await _asyncLocker.WaitAsync();
+
             string topic = eventArgs?.ApplicationMessage?.Topic;
             try
             {
@@ -79,6 +85,10 @@ namespace MQTTnet.EventBus.Impl
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, $"Error Processing topic \"{topic}\"");
+            }
+            finally
+            {
+                _asyncLocker.Release();
             }
         }
 
@@ -111,7 +121,8 @@ namespace MQTTnet.EventBus.Impl
         {
             if (args.IsReConnected)
             {
-                var results = await ReSubscribeAllTopicsAsync();
+                if (args.DisconnectReason == Client.Disconnecting.MqttClientDisconnectReason.NormalDisconnection)
+                    await ReSubscribeAllTopicsAsync();
             }
         }
 
@@ -123,10 +134,8 @@ namespace MQTTnet.EventBus.Impl
             var containsKey = _subsManager.HasSubscriptionsForEvent(topic);
             if (!containsKey)
             {
-                var connection = await _mqttPersisterConnection.RegisterMessageHandlerAsync(MessageReceivedAsync);
-                if (connection.IsConnected)
+                if (await _mqttPersisterConnection.TryRegisterMessageHandlerAsync(MessageReceivedAsync))
                 {
-                    connection.ClientConnectionChanged += OnConnectionLostAsync;
                     _subsManager.TryAddSubscription(subscriptionInfo);
                     return await OnSubscribesAsync(topic);
                 }
