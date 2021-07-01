@@ -13,9 +13,9 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServicesBuilder AddEvenets(this IServicesBuilder serviceBuilder, Action<IEventOptionsBuilder> configurator)
-        {
-            return serviceBuilder.AddServices(services => {
+        public static IServicesBuilder AddEvenets(this IServicesBuilder serviceBuilder, Action<IEventOptionsBuilder> configurator) =>
+            serviceBuilder.AddServices(services =>
+            {
                 var eventBuilder = new EventOptionsBuilder();
                 configurator.Invoke(eventBuilder);
 
@@ -29,28 +29,38 @@ namespace Microsoft.Extensions.DependencyInjection
                         services.AddScoped(o.ConverterType);
                 }
 
-                services.AddSingleton(serviceProvider => {
+                services.AddSingleton(serviceProvider =>
+                {
                     StaticCache.EventProvider = new EventProvider(
-                        serviceProvider, 
-                        serviceProvider.GetRequiredService<ITopicPattenBuilder>(), 
-                        eventOptions, 
+                        serviceProvider,
+                        serviceProvider.GetRequiredService<ITopicPattenBuilder>(),
+                        eventOptions,
                         serviceProvider.GetRequiredService<IEventBusLogger<EventProvider>>());
                     return StaticCache.EventProvider;
                 });
             }, ServiceType.Event);
-        }
 
-        public static IServiceCollection AddMqttEventBus(this IServiceCollection services, Action<MqttClientOptionsBuilder, IServicesBuilder> configurator, int retryCount = 5)
-            => AddMqttEventBus(services, configurator, new BusOptions { RetryCount = retryCount });
+        public static IServiceCollection AddMqttEventBus(this IServiceCollection services, Action<MqttClientOptionsBuilder, ILocalServerOptionsBuilder, IServicesBuilder> configurator) => 
+            services.AddMqttEventBus(null, configurator);
 
-        public static IServiceCollection AddMqttEventBus(this IServiceCollection services, Action<MqttClientOptionsBuilder, IServicesBuilder> configurator, BusOptions busOptions)
+        public static IServiceCollection AddMqttEventBus(this IServiceCollection services, Action<MqttClientOptionsBuilder, IServicesBuilder> configurator) => 
+            services.AddMqttEventBus(configurator, null);
+
+        private static IServiceCollection AddMqttEventBus(this IServiceCollection services, 
+            Action<MqttClientOptionsBuilder, IServicesBuilder> cfgStrategy1, 
+            Action<MqttClientOptionsBuilder, ILocalServerOptionsBuilder, IServicesBuilder> cfgStrategy2)
         {
             var addedServices = new HashSet<ServiceType>();
 
             var mqttHostBuilder = new MqttClientOptionsBuilder();
             var serviceBuilder = new ServicesBuilder(services, addedServices);
+            var localServerBuilder = new LocalServerOptionsBuilder();
+            
+            if (cfgStrategy1 != null)
+                cfgStrategy1.Invoke(mqttHostBuilder, serviceBuilder);
 
-            configurator.Invoke(mqttHostBuilder, serviceBuilder);
+            if (cfgStrategy2 != null)
+                cfgStrategy2.Invoke(mqttHostBuilder, localServerBuilder, serviceBuilder);
 
             if (!addedServices.Contains(ServiceType.Logger))
             {
@@ -59,12 +69,12 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return services
                 .AddSingleton(mqttHostBuilder.Build())
-                .AddSingleton(busOptions)
+                .AddSingleton(localServerBuilder.Build())
                 .AddEventBusServices();
         }
 
-        private static IServiceCollection AddEventBusServices(this IServiceCollection services)
-            => services
+        private static IServiceCollection AddEventBusServices(this IServiceCollection services) => 
+            services
                 .AddSingleton<IStringConverter, StringConverter>()
                 .AddSingleton<IEventBus, MqttEventBus>()
                 .AddSingleton<ITopicComparer, MqttTopicComparer>()
@@ -73,12 +83,11 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddSingleton<IConsumeMethodInvoker, ConsumeMethodInvoker>()
                 .AddSingleton<ITopicPattenBuilder, TopicPattenBuilder>();
 
-        public static IServicesBuilder AddLogger(this IServicesBuilder builder, Action<ILoggerOptionsBuilder> loggerConfigurator)
-        {
-            return builder.AddServices(services => {
+        public static IServicesBuilder AddLogger(this IServicesBuilder builder, Action<ILoggerOptionsBuilder> loggerConfigurator) =>
+            builder.AddServices(services =>
+            {
                 var loggerBuilder = new LoggerOptionsBuilder(services);
                 loggerConfigurator.Invoke(loggerBuilder);
             }, ServiceType.Logger);
-        }
     }
 }
