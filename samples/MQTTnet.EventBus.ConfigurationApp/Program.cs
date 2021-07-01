@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using MQTTnet.Client.Options;
 using MQTTnet.EventBus.Serializers;
 using Serilog;
 using System;
@@ -12,17 +13,38 @@ namespace MQTTnet.EventBus.ConfigurationApp
 
         static async Task Main(string[] args)
         {
+            //var managedOptions = new ManagedMqttClientOptionsBuilder()
+            //    .WithAutoReconnectDelay(TimeSpan.FromSeconds(5))
+            //    .WithClientOptions(options)
+            //    .Build();
+
             Configure();
 
             var eventBus = _provider.GetService<IEventBus>();
+            //await eventBus.PublishAsync(new StatusChanged { Value = 1 }, new StatusChangedTopicInfo { Territory = "garni" });
+            //await eventBus.PublishAsync(new StateChanged { Value = 1 }, new StateChangedTopicInfo { Territory = "garni" });
 
             //await eventBus.PublishAsync(new MyEvent { Status = 1 });
             //await eventBus.SubscribeAsync<MyEvent>("/status/garni/sever/1");
             //await eventBus.SubscribeAsync<AllEvents>("#");
 
             //await eventBus.SubscribeAsync<StateChanged>("/state/Ohanavan/server1/raspberry_client");
-            await eventBus.SubscribeAsync<StateChanged>("/state/#");
+            //await eventBus.SubscribeAsync<Sys>("$SYS/broker/bytes/received");
 
+
+            //await eventBus.SubscribeAsync<Sys>("$SYS/broker/subscriptions/count");
+            await eventBus.SubscribeAsync<StateChanged>("/state/#");
+            await eventBus.SubscribeAsync<StatusChanged>("/status/#");
+            //await eventBus.SubscribeAsync<StateChanged>(new StateChangedTopicInfo { Territory = "garni", Server = "Server1" });
+            //await eventBus.SubscribeAsync<StatusChanged>(new StatusChangedTopicInfo { Territory = "garni", Server = "Server1" });
+
+            //await eventBus.PublishAsync(new StateChanged { Value = 10 });
+            //var result1 = await eventBus.PublishAsync(new StateChanged { Value = 10 }, new StateChangedTopicInfo { Territory = "garni", Server = "Server1" });
+            //var result2 = await eventBus.PublishAsync(new StatusChanged { Value = 10 }, new StatusChangedTopicInfo { Territory = "garni", Server = "Server1" });
+            //var code = result.ReasonCode;
+
+            ////await eventBus.PublishAsync(new StatusChanged { }, new StatusChangedTopicInfo { });
+            ////await eventBus.PublishAsync(new StateChanged { }, new StateChangedTopicInfo { });
 
             //await eventBus.PublishAsync(new MyEvent { Territory = "garni", NodeId = "49", Status = 1 });
             //await eventBus.PublishAsync(new MyEvent { }, "/state/garni/49");
@@ -34,29 +56,42 @@ namespace MQTTnet.EventBus.ConfigurationApp
         {
             var services = new ServiceCollection();
 
-            services.AddMqttEventBus((host, service) =>
+            services.AddMqttEventBus((host, localServer, service) =>
             {
                 host
-                    .WithClientId($"localhost-{Guid.NewGuid()}")
+                    .WithClientId($"Artyom Test {Guid.NewGuid()}")
+                //.WithTcpServer("5.189.161.209", port: 1883);
                     .WithTcpServer("localhost", port: 1883);
+                //.WithCredentials("art", "1234");
+
+                localServer
+                    .RetryCount(5)
+                    .MaxConcurrentCalls(2);
 
                 service.AddEvenets(eventBuilder =>
                 {
-                    //eventBuilder.AddEventMapping<StatusChanged>(cfg =>
+                    //eventBuilder.AddEventMapping<Sys>(cfg =>
                     //{
-                    //    cfg.AddConsumer<IStatusChangedConsumer>();
-                    //    cfg.UseConverter<StatusChangedConverter>();
-                    //    cfg.UseTopicPattern(ev => $"Status/{ev.Territory}/{ev.Server}/{ev.TrackerId}");
-                    //    cfg.UseMessageBuilder(mb => mb.WithAtLeastOnceQoS());
+                    //    cfg.AddConsumer<SysConsumer>();
+                    //    cfg.UseConverter<SysConverter>();
                     //});
+
+                    eventBuilder.AddEventMapping<StatusChanged>(cfg =>
+                    {
+                        cfg.AddConsumer<StatusChangedConsumer>();
+                        cfg.UseConverter<StatusChangedConverter>();
+                        cfg.UseTopicPattern<StatusChangedTopicInfo>(ev => $"/status/{ev.Territory}/{ev.Server}");
+                        cfg.UseMessageBuilder(mb => mb.WithAtLeastOnceQoS());
+                    });
 
                     eventBuilder.AddEventMapping<StateChanged>(cfg =>
                     {
                         cfg.AddConsumer<StateChangedConsuer>();
                         cfg.UseConverter<StateChangedConverter>();
                         //cfg.UseJsonConverter();
-                        //cfg.UseTopicPattern<StateChangedTopicInfo>(ev => $"/State/{ev.Territory}/{ev.Server}/{ev.ClientId}");
-                        cfg.UseTopicPattern<StateChangedTopicInfo>(ev => $"/State/{ev.Territory}/{ev.Server}/{ev.ClientId}");
+                        //cfg.UseTopicPattern("/State/Test");
+                        //cfg.UseTopicPattern("/State/{Territory}/{Server}/{ClientId}");
+                        cfg.UseTopicPattern<StateChangedTopicInfo>(ev => $"/state/{ev.Territory}/{ev.Server}/{ev.ClientId}");
                         cfg.UseMessageBuilder(builder => builder.WithRetainFlag());
                     });
 
@@ -88,15 +123,51 @@ namespace MQTTnet.EventBus.ConfigurationApp
         }
     }
 
+    public class Sys { }
+    public class SysConsumer : IConsumer<Sys>
+    {
+        public Task ConsumeAsync(EventContext<Sys> context)
+        {
+            return Task.CompletedTask;
+        }
+    }
+
+    public class SysConverter : IEventConverter<Sys>
+    {
+        public Sys Deserialize(byte[] value)
+        {
+            return new Sys();
+        }
+
+        public byte[] Serialize(Sys value)
+        {
+            return new byte[0];
+        }
+    }
+
     public class StatusChanged
     {
-        public string Territory { get; set; }
-        public string Server { get; set; } = "Server1";
-        public int TrackerId { get; set; }
         public int Value { get; set; }
     }
 
     public interface IStatusChangedConsumer : IConsumer<StatusChanged> { }
+
+    public class StatusChangedConsumer : IStatusChangedConsumer
+    {
+        public Task ConsumeAsync(EventContext<StatusChanged> context)
+        {
+            try
+            {
+                var topicInfo = context.GetTopicInfo<StatusChangedTopicInfo>();
+                Console.WriteLine($"{context.Message.Topic} Status: {context.EventArg.Value}, Territory: {topicInfo.Territory}, Server: {topicInfo.Server}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+            return Task.CompletedTask;
+        }
+    }
 
     public class StatusChangedConverter : IEventConverter<StatusChanged>
     {
@@ -191,11 +262,20 @@ namespace MQTTnet.EventBus.ConfigurationApp
         }
     }
 
-    public class StateChangedTopicInfo
+    public class StateChangedTopicInfo : ITopicPattern<StateChanged>
     {
         public string Territory { get; set; }
         public string Server { get; set; } = "Server1";
         public string ClientId => $"{Territory}_rpi";
+
+        public Func<StateChangedTopicInfo, string> Create()
+            => ev => $"/state/{ev.Territory}/{ev.Server}/{ev.ClientId}";
+    }
+
+    public class StatusChangedTopicInfo : ITopicPattern<StatusChanged>
+    {
+        public string Territory { get; set; }
+        public string Server { get; set; } = "Server1";
     }
 
     public class StateChanged
@@ -211,21 +291,27 @@ namespace MQTTnet.EventBus.ConfigurationApp
         private static readonly object _lockObject = new object();
         public Task ConsumeAsync(EventContext<StateChanged> context)
         {
+            //await Task.Delay(4000);
+
             lock (_lockObject)
             {
-                var info = context.GetTopicInfo<StateChangedTopicInfo>();
-                string aaa = context.GetTopicEntity("Territory");
-                if (info == null)
-                {
-                    Console.WriteLine($"{context.Message.Topic} State: {context.EventArg.Value}");
-                }
-                else
-                {
-                    //Console.WriteLine($"{context.Message.Topic} State: {context.EventArg.Value}, Territory: {context.EventArg.Territory}, ClientId: {context.EventArg.ClientId}");
-                    Console.WriteLine($"{context.Message.Topic} State: {context.EventArg.Value}, Territory: {info.Territory}, ClientId: {info.ClientId}");
-                }
-                return Task.CompletedTask;
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write($"------------");
+                Console.ResetColor();
             }
+
+            var info = context.GetTopicInfo<StateChangedTopicInfo>();
+            string aaa = context.GetTopicEntity("Territory");
+            if (info == null)
+            {
+                Console.WriteLine($"{context.Message.Topic} State: {context.EventArg.Value}");
+            }
+            else
+            {
+                //Console.WriteLine($"{context.Message.Topic} State: {context.EventArg.Value}, Territory: {context.EventArg.Territory}, ClientId: {context.EventArg.ClientId}");
+                Console.WriteLine($"{context.Message.Topic} State: {context.EventArg.Value}, Territory: {info.Territory}, ClientId: {info.ClientId}");
+            }
+            return Task.CompletedTask;
         }
     }
 
