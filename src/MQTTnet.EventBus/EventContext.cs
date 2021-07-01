@@ -25,5 +25,13 @@
         }
 
         public TEvent EventArg { get; }
+
+        public TTopicInfo GetTopicInfo<TTopicInfo>()
+            where TTopicInfo : ITopicPattern<TEvent>, new()
+        {
+            var topicInfo = new TTopicInfo();
+            bool created = this.GetTopicInfo((provider, eventType) => provider.TrySetTopicInfo(topicInfo, eventType, Message.Topic));
+            return created ? topicInfo : default;
+        }
     }
 }

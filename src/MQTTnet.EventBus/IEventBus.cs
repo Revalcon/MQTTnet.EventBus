@@ -21,11 +21,14 @@ namespace MQTTnet.EventBus
         public static Task<MqttClientPublishResult> PublishAsync(this IEventBus eventBus, object @event)
             => eventBus.PublishAsync(StaticCache.EventProvider.CreateMessage(@event, StaticCache.EventProvider.GetTopic(@event)));
 
-        public static Task<MqttClientPublishResult> PublishAsync(this IEventBus eventBus, object @event, object topicInfo)
-            => eventBus.PublishAsync(StaticCache.EventProvider.CreateMessage(@event, StaticCache.EventProvider.GetTopic(@event, topicInfo)));
+        public static Task<MqttClientPublishResult> PublishAsync<TEvent>(this IEventBus eventBus, TEvent @event, ITopicPattern<TEvent> topicInfo)
+            => eventBus.PublishAsync(StaticCache.EventProvider.CreateMessage(@event, StaticCache.EventProvider.GetTopic(topicInfo)));
+
 
         public static Task<MqttClientSubscribeResult> SubscribeAsync<TEvent>(this IEventBus eventBus, string topic)
             => eventBus.SubscribeAsync(StaticCache.EventProvider.CreateSubscriptionInfo<TEvent>(topic));
+        public static Task<MqttClientSubscribeResult> SubscribeAsync<TEvent>(this IEventBus eventBus, ITopicPattern<TEvent> topicInfo)
+            => eventBus.SubscribeAsync<TEvent>(StaticCache.EventProvider.GetTopic(typeof(TEvent), topicInfo));
 
         public static Task<MqttClientUnsubscribeResult> UnsubscribeAsync<TEvent>(this IEventBus eventBus, string topic)
             => eventBus.UnsubscribeAsync(StaticCache.EventProvider.CreateSubscriptionInfo<TEvent>(topic));
