@@ -124,12 +124,14 @@ namespace MQTTnet.EventBus.Impl
             public EventCreater(IServiceProvider serviceProvider, EventOptions eventOptions)
             {
                 _serializerMethod = eventOptions.ConverterType.GetMethod(nameof(IEventSerializer<object>.Serialize));
-                Converter = serviceProvider.GetService(eventOptions.ConverterType);
+                _converter = new Lazy<object>(() => serviceProvider.GetService(eventOptions.ConverterType));
                 MessageCreater = eventOptions.MessageCreater;
             }
 
             private readonly MethodInfo _serializerMethod;
-            public object Converter { get; }
+            
+            private readonly Lazy<object> _converter;
+            public object Converter => _converter.Value;
             public Action<MqttApplicationMessageBuilder> MessageCreater { get; }
 
             public byte[] Serialize(object @event)
