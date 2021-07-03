@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Text;
 
@@ -21,7 +22,11 @@ namespace MQTTnet.EventBus.Reflection
             {
                 if (node.NodeType == ExpressionType.Constant)
                 {
-                    _constBuilder.Append(((ConstantExpression)node).Value);
+                    var value = Convert.ToString(((ConstantExpression)node).Value);
+                    if (value.Contains("{0}"))
+                        _constBuilder.Append(value);
+                    else
+                        _members.Add(value);
                 }
                 else if (node.NodeType == ExpressionType.MemberAccess)
                 {
