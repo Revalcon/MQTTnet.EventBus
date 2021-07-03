@@ -41,6 +41,7 @@ namespace MQTTnet.EventBus.DependencyInjection.Builder.Impl
         }
 
         public IEventMappingBuilder<TEvent> UseTopicPattern<TTopicInfo>(Expression<Func<TTopicInfo, string>> patternExp)
+            where TTopicInfo : ITopicPattern<TEvent>
         {
             string pattern = ReflectionHelper.CreateTopicPattern(patternExp);
             _eventOptions.TopicInfoType = typeof(TTopicInfo);

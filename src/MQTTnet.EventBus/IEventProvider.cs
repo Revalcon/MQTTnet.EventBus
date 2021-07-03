@@ -65,11 +65,8 @@ namespace MQTTnet.EventBus
             return null;
         }
 
-        public static string GetTopic(this IEventProvider eventProvider, object @event)
-            => GetTopic(eventProvider, @event.GetType());
-
-        public static string GetTopic(this IEventProvider eventProvider, object @event, object topicInfo)
-            => GetTopic(eventProvider, @event.GetType(), topicInfo);
+        public static string GetTopic(this IEventProvider eventProvider, object @event) => 
+            GetTopic(eventProvider, @event.GetType());
 
         public static string GetTopic(this IEventProvider eventProvider, Type eventType, object toipcInfo)
         {
@@ -77,6 +74,9 @@ namespace MQTTnet.EventBus
                 return eventProvider.GetTopic(eventName, toipcInfo);
             return null;
         }
+
+        public static string GetTopic<TEvent>(this IEventProvider eventProvider, ITopicPattern<TEvent> toipicInfo) => 
+            GetTopic(eventProvider, typeof(TEvent), toipicInfo);
 
         public static Type GetConsumerType(this IEventProvider eventProvider, Type eventType)
         {
@@ -92,11 +92,11 @@ namespace MQTTnet.EventBus
             return null;
         }
 
-        public static Type GetConsumerType<TEvent>(this IEventProvider eventProvider)
-            => eventProvider.GetConsumerType(typeof(TEvent));
+        public static Type GetConsumerType<TEvent>(this IEventProvider eventProvider) => 
+            eventProvider.GetConsumerType(typeof(TEvent));
 
-        public static SubscriptionInfo CreateSubscriptionInfo(this IEventProvider eventProvider, Type eventType, string topic)
-            => new SubscriptionInfo
+        public static SubscriptionInfo CreateSubscriptionInfo(this IEventProvider eventProvider, Type eventType, string topic) => 
+            new SubscriptionInfo
             {
                 Topic = topic,
                 EventName = eventType.Name,
@@ -104,7 +104,7 @@ namespace MQTTnet.EventBus
                 ConsumerType = eventProvider.GetConsumerType(eventType)
             };
 
-        public static SubscriptionInfo CreateSubscriptionInfo<TEvent>(this IEventProvider eventProvider, string topic)
-            => CreateSubscriptionInfo(eventProvider, typeof(TEvent), topic);
+        public static SubscriptionInfo CreateSubscriptionInfo<TEvent>(this IEventProvider eventProvider, string topic) => 
+            CreateSubscriptionInfo(eventProvider, typeof(TEvent), topic);
     }
 }

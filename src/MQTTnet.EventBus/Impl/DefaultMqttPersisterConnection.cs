@@ -1,13 +1,17 @@
 ﻿using MQTTnet.Client;
+using MQTTnet.Client.Connecting;
 using MQTTnet.Client.Disconnecting;
 using MQTTnet.Client.Options;
 using MQTTnet.EventBus.Logger;
 using MQTTnet.Exceptions;
+using MQTTnet.Internal;
 using Polly;
-using Polly.Retry;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace MQTTnet.EventBus.Impl
 {
@@ -18,55 +22,111 @@ namespace MQTTnet.EventBus.Impl
         private IMqttClientOptions _options;
         private readonly int _retryCount;
         private readonly IEventBusLogger<DefaultMqttPersisterConnection> _logger;
-        private readonly object _syncObject;
+        private readonly IDictionary<string, MqttClientConnectionEventArgs> _disconnectionCache;
+        private readonly AsyncLock _asyncLock;
 
         public DefaultMqttPersisterConnection(IMqttClientOptions mqttClientOptions, IEventBusLogger<DefaultMqttPersisterConnection> logger, BusOptions busOptions)
         {
-            _syncObject = new object();
+            _asyncLock = new AsyncLock();
             _options = mqttClientOptions;
             _logger = logger;
             _retryCount = busOptions?.RetryCount ?? 5;
             _client = CreareMqttClient();
+            _disconnectionCache = new Dictionary<string, MqttClientConnectionEventArgs>();
         }
 
-        public bool IsConnected => _client != null && _client.IsConnected;
+        public event Func<IMqttPersisterConnection, MqttClientConnectionEventArgs, Task> ClientConnectionChanged;
+        public bool IsConnected => _client.IsConnected;
         public IMqttClient GetClient() => _client;
 
         private IMqttClient CreareMqttClient()
         {
             var client = new MqttFactory().CreateMqttClient();
-            client.UseDisconnectedHandler(e => OnDisconnected(e));
-            _logger.LogInformation($"Mqtt Client acquired a persistent connection to '{_options.ClientId}' and is subscribed to failure events");
+            client.UseDisconnectedHandler(OnDisconnectedAsync);
+            client.UseConnectedHandler(OnConnectedAsync);
+            _logger.LogInformation($"Mqtt Client acquired a persistent connection to '{_options.ClientId}'");
             return client;
         }
 
-        public bool TryConnect()
+        public async Task<bool> TryConnectAsync(bool afterDisconnection = false, CancellationToken cancellationToken = default)
         {
-            _logger.LogInformation("Mqtt Client is trying to connect");
+            if (IsConnected)
+                return true;
 
-            lock (_syncObject)
+            using (await _asyncLock.WaitAsync(cancellationToken))
             {
-                var policy = Policy.Handle<SocketException>()
-                    .Or<MqttProtocolViolationException>()
-                    .WaitAndRetry(_retryCount, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), (ex, time) =>
-                    {
-                        _logger.LogWarning(ex, $"Mqtt Client could not connect after {time.TotalSeconds:n1}s ({ex.Message})");
-                    }
-                );
+                _logger.LogInformation("Mqtt Client is trying to connect");
 
-                policy.Execute(() => _client.ConnectAsync(_options)).GetAwaiter().GetResult();
+                try
+                {
+                    var policy = Policy.Handle<SocketException>()
+                        .Or<MqttProtocolViolationException>()
+                        .WaitAndRetry(_retryCount, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), (ex, time) =>
+                        {
+                            _logger.LogWarning(ex, $"Mqtt Client could not connect after {time.TotalSeconds:n1}s ({ex.Message})");
+                        });
+
+                    await policy.Execute(() => afterDisconnection ?
+                        _client.ReconnectAsync() :
+                        _client.ConnectAsync(_options));
+
+                    _logger.LogInformation("Mqtt Client was connected");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogInformation(ex.Message);
+                }
+
                 return IsConnected;
             }
         }
 
-        private void OnDisconnected(MqttClientDisconnectedEventArgs e)
+        private Task OnConnectedAsync(MqttClientConnectedEventArgs e)
+        {
+            if (_disconnectionCache.TryGetValue(_options.ClientId, out var args))
+            {
+                if(!args.IsReConnected)
+                {
+                    _logger.LogInformation($"A MqttServer '{_options.ClientId}' trying to connect...");
+                    args.MarkAsConnected();
+                    return InvokeClientConnectionChangedMethod(args);
+                }
+            }
+            else
+                _disconnectionCache.Add(_options.ClientId, MqttClientConnectionEventArgs.Connected(_options.ClientId));
+
+            return Task.CompletedTask;
+        }
+
+        private async Task OnDisconnectedAsync(MqttClientDisconnectedEventArgs e)
         {
             if (_disposed)
                 return;
 
-            _logger.LogWarning("A MqttServer connection is shutdown. Trying to re-connect...");
+            _logger.LogWarning($"A MqttServer '{_options.ClientId}' connection is shutdown, Reason: {e.Reason}. Trying to re-connect...");
+            if (_disconnectionCache.TryGetValue(_options.ClientId, out var args))
+            {
+                if (args.IsReConnected)
+                {
+                    args.MarkAsDisconnected();
+                    await InvokeClientConnectionChangedMethod(args);
+                }
+            }
+            else
+            {
+                _disconnectionCache.Add(_options.ClientId, MqttClientConnectionEventArgs.Disconnected(_options.ClientId, e.Reason));
+                await InvokeClientConnectionChangedMethod(args);
+            }
 
-            TryConnect();
+            await TryConnectAsync(true);
+        }
+
+        private Task InvokeClientConnectionChangedMethod(MqttClientConnectionEventArgs args)
+        {
+            var handler = ClientConnectionChanged;
+            if (handler != null)
+                return handler.Invoke(this, args);
+            return Task.CompletedTask;
         }
 
         public void Dispose()
