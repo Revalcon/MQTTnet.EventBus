@@ -46,30 +46,28 @@ namespace MQTTnet.EventBus.Impl
             _asyncLocker = new SemaphoreSlim(busOptions.MaxConcurrentCalls, busOptions.MaxConcurrentCalls);
         }
 
-        public async Task<MqttClientPublishResult> PublishAsync(MqttApplicationMessage message)
-        { 
+        public async Task<MqttClientPublishResult> PublishAsync(MqttApplicationMessage message, CancellationToken cancellationToken = default)
+        {
             var connection = _mqttPersisterConnection;
             if (!connection.IsConnected)
             {
-                await connection.TryConnectAsync();
+                await connection.TryConnectAsync(cancellationToken: cancellationToken);
             }
 
             try
             {
                 var policy = Policy
-                    .Handle<SocketException>()
-                    .Or<MqttCommunicationException>()
-                    .Or<Exception>()
-                    .WaitAndRetry(_retryCount, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), (ex, time) =>
+                    .Handle<Exception>()
+                    .WaitAndRetryAsync(_retryCount, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), (ex, time) =>
                     {
                         _logger.LogError(ex, $"Could not publish topic: {message?.Topic} after {time.TotalSeconds:n1}s ({ex.Message})");
                     });
 
-                return await policy.Execute(() => connection.GetClient().PublishAsync(message));
+                return await policy.ExecuteAsync(token => connection.GetClient().PublishAsync(message, token), cancellationToken);
             }
             catch { }
 
-            return new MqttClientPublishResult();
+            return null;
         }
 
         private async Task MessageReceivedAsync(MqttApplicationMessageReceivedEventArgs eventArgs)
@@ -126,7 +124,7 @@ namespace MQTTnet.EventBus.Impl
             }
         }
 
-        public async Task<MqttClientSubscribeResult> SubscribeAsync(SubscriptionInfo subscriptionInfo)
+        public async Task<MqttClientSubscribeResult> SubscribeAsync(SubscriptionInfo subscriptionInfo, CancellationToken cancellationToken = default)
         {
             string topic = subscriptionInfo?.Topic;
             _logger.LogInformation($"Subscribing to topic {topic} with {subscriptionInfo?.ConsumerType?.Name}");
@@ -134,46 +132,46 @@ namespace MQTTnet.EventBus.Impl
             var containsKey = _subsManager.HasSubscriptionsForEvent(topic);
             if (!containsKey)
             {
-                if (await _mqttPersisterConnection.TryRegisterMessageHandlerAsync(MessageReceivedAsync))
+                if (await _mqttPersisterConnection.TryRegisterMessageHandlerAsync(MessageReceivedAsync, cancellationToken))
                 {
                     _subsManager.TryAddSubscription(subscriptionInfo);
-                    return await OnSubscribesAsync(topic);
+                    return await OnSubscribesAsync(topic, cancellationToken);
                 }
             }
 
-            return new MqttClientSubscribeResult();
+            return null;
         }
 
-        private async Task<MqttClientSubscribeResult> OnSubscribesAsync(string topic)
+        private async Task<MqttClientSubscribeResult> OnSubscribesAsync(string topic, CancellationToken cancellationToken = default)
         {
             var connection = _mqttPersisterConnection;
             if (!connection.IsConnected)
             {
-                await connection.TryConnectAsync();
+                await connection.TryConnectAsync(cancellationToken: cancellationToken);
             }
 
             try
             {
                 var policy = Policy
                     .Handle<Exception>()
-                    .WaitAndRetry(_retryCount, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), (ex, time) =>
+                    .WaitAndRetryAsync(_retryCount, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), (ex, time) =>
                     {
                         _logger.LogError(ex, $"Could not Subscribe topic: {topic} after {time.TotalSeconds:n1}s ({ex.Message})");
                     });
 
-                return await policy.Execute(() => connection.GetClient().SubscribeAsync(topic));
+                return await policy.ExecuteAsync(token => connection.GetClient().SubscribeAsync(topic), cancellationToken);
             }
             catch { }
 
-            return new MqttClientSubscribeResult();
+            return null;
         }
 
-        public async Task<MqttClientUnsubscribeResult> UnsubscribeAsync(SubscriptionInfo subscriptionInfo)
+        public async Task<MqttClientUnsubscribeResult> UnsubscribeAsync(SubscriptionInfo subscriptionInfo, CancellationToken cancellationToken = default)
         {
             var connection = _mqttPersisterConnection;
             if (!connection.IsConnected)
             {
-                await connection.TryConnectAsync();
+                await connection.TryConnectAsync(cancellationToken: cancellationToken);
             }
 
             var topic = subscriptionInfo?.Topic; 
@@ -186,17 +184,16 @@ namespace MQTTnet.EventBus.Impl
                 return await connection.RemoveSubscriptionAsync(topic);
             }
 
-            return new MqttClientUnsubscribeResult();
+            return null;
         }
 
-        public Task<MqttClientSubscribeResult[]> ReSubscribeAllTopicsAsync()
+        public Task<MqttClientSubscribeResult[]> ReSubscribeAllTopicsAsync(CancellationToken cancellationToken = default)
         {
             var subscribers = _subsManager.AllTopics().Select(async topic =>
             {
-                var connection = _mqttPersisterConnection;
-                if (connection.IsConnected || await connection.TryConnectAsync())
+                if (await _mqttPersisterConnection.TryConnectAsync(cancellationToken: cancellationToken))
                     return await OnSubscribesAsync(topic);
-                return new MqttClientSubscribeResult();
+                return null;
             });
 
             return Task.WhenAll(subscribers);

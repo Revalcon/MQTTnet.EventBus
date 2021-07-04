@@ -61,14 +61,14 @@ namespace MQTTnet.EventBus.Impl
                 {
                     var policy = Policy.Handle<SocketException>()
                         .Or<MqttProtocolViolationException>()
-                        .WaitAndRetry(_retryCount, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), (ex, time) =>
+                        .WaitAndRetryAsync(_retryCount, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), (ex, time) =>
                         {
                             _logger.LogWarning(ex, $"Mqtt Client could not connect after {time.TotalSeconds:n1}s ({ex.Message})");
                         });
 
-                    await policy.Execute(() => afterDisconnection ?
+                    await policy.ExecuteAsync(token => afterDisconnection ?
                         _client.ReconnectAsync() :
-                        _client.ConnectAsync(_options));
+                        _client.ConnectAsync(_options, token), cancellationToken);
 
                     _logger.LogInformation("Mqtt Client was connected");
                 }
