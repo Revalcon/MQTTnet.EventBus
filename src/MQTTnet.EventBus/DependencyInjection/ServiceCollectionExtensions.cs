@@ -89,5 +89,10 @@ namespace Microsoft.Extensions.DependencyInjection
                 var loggerBuilder = new LoggerOptionsBuilder(services);
                 loggerConfigurator.Invoke(loggerBuilder);
             }, ServiceType.Logger);
+
+        public static IServiceCollection AddConsumer<TIConsumer, TConsumer>(this IServiceCollection services)
+            where TIConsumer : class, IConsumer
+            where TConsumer : class, TIConsumer
+            => services.AddScoped<TIConsumer, TConsumer>();
     }
 }
