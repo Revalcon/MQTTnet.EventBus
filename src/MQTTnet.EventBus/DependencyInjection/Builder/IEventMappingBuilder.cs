@@ -7,8 +7,9 @@ namespace MQTTnet.EventBus.DependencyInjection.Builder
     {
         IEventMappingBuilder<TEvent> AddConsumer<TConsumer>() where TConsumer : IConsumer<TEvent>;
         IEventMappingBuilder<TEvent> UseConverter<TConverter>() where TConverter : Serializers.IEventConverter<TEvent>;
-        IEventMappingBuilder<TEvent> UseTopicPattern(string value);
-        IEventMappingBuilder<TEvent> UseTopicPattern<TTopicInfo>(Expression<Func<TTopicInfo, string>> patternExp)
+        IEventMappingBuilder<TEvent> UseTopicPattern(string pattern);
+        IEventMappingBuilder<TEvent> UseTopicPattern(string root, string pattern);
+        IEventMappingBuilder<TEvent> UseTopicPattern<TTopicInfo>(string root, Expression<Func<TTopicInfo, string>> pattern)
             where TTopicInfo : ITopicPattern<TEvent>;
         IEventMappingBuilder<TEvent> UseMessageBuilder(Action<MqttApplicationMessageBuilder> messageBuilderConfigurator);
     }

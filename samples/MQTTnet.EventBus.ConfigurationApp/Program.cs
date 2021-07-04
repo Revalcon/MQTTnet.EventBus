@@ -33,8 +33,12 @@ namespace MQTTnet.EventBus.ConfigurationApp
 
 
             //await eventBus.SubscribeAsync<Sys>("$SYS/broker/subscriptions/count");
-            await eventBus.SubscribeAsync<StateChanged>("/state/#");
-            await eventBus.SubscribeAsync<StatusChanged>("/status/#");
+
+            //await eventBus.SubscribeAsync<StateChanged>("/state/#");
+            //await eventBus.SubscribeAsync<StatusChanged>("/status/#");
+
+            await eventBus.SubscribeAllAsync();
+
             //await eventBus.SubscribeAsync<StateChanged>(new StateChangedTopicInfo { Territory = "garni", Server = "Server1" });
             //await eventBus.SubscribeAsync<StatusChanged>(new StatusChangedTopicInfo { Territory = "garni", Server = "Server1" });
 
@@ -59,10 +63,8 @@ namespace MQTTnet.EventBus.ConfigurationApp
             services.AddMqttEventBus((host, localServer, service) =>
             {
                 host
-                    .WithClientId($"Artyom Test {Guid.NewGuid()}")
-                //.WithTcpServer("5.189.161.209", port: 1883);
+                    .WithClientId($"Test {Guid.NewGuid()}")
                     .WithTcpServer("localhost", port: 1883);
-                //.WithCredentials("art", "1234");
 
                 localServer
                     .RetryCount(5)
@@ -80,7 +82,7 @@ namespace MQTTnet.EventBus.ConfigurationApp
                     {
                         cfg.AddConsumer<StatusChangedConsumer>();
                         cfg.UseConverter<StatusChangedConverter>();
-                        cfg.UseTopicPattern<StatusChangedTopicInfo>(ev => $"/status/{ev.Territory}/{ev.Server}");
+                        cfg.UseTopicPattern<StatusChangedTopicInfo>(root: "/status", ev => $"/status/{ev.Territory}/{ev.Server}");
                         cfg.UseMessageBuilder(mb => mb.WithAtLeastOnceQoS());
                     });
 
@@ -91,7 +93,7 @@ namespace MQTTnet.EventBus.ConfigurationApp
                         //cfg.UseJsonConverter();
                         //cfg.UseTopicPattern("/State/Test");
                         //cfg.UseTopicPattern("/State/{Territory}/{Server}/{ClientId}");
-                        cfg.UseTopicPattern<StateChangedTopicInfo>(ev => $"/state/{ev.Territory}/{ev.Server}/{ev.ClientId}");
+                        cfg.UseTopicPattern<StateChangedTopicInfo>(root: "/state", ev => $"/{ev.Territory}/{ev.Server}/{ev.ClientId}");
                         cfg.UseMessageBuilder(builder => builder.WithRetainFlag());
                     });
 

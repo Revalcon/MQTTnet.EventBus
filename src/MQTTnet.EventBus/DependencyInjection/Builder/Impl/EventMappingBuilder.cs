@@ -21,12 +21,6 @@ namespace MQTTnet.EventBus.DependencyInjection.Builder.Impl
             return this;
         }
 
-        public IEventMappingBuilder<TEvent> UseTopicPattern(string value)
-        {
-            _eventOptions.TopicPattern = value;
-            return this;
-        }
-
         public IEventMappingBuilder<TEvent> UseConverter<TConverter>()
             where TConverter : IEventConverter<TEvent>
         {
@@ -40,12 +34,33 @@ namespace MQTTnet.EventBus.DependencyInjection.Builder.Impl
             return this;
         }
 
-        public IEventMappingBuilder<TEvent> UseTopicPattern<TTopicInfo>(Expression<Func<TTopicInfo, string>> patternExp)
-            where TTopicInfo : ITopicPattern<TEvent>
+        public IEventMappingBuilder<TEvent> UseTopicPattern(string pattern) =>
+            UseTopicPattern(pattern, pattern);
+
+        public IEventMappingBuilder<TEvent> UseTopicPattern(string root, string pattern)
+        {
+            _eventOptions.Topic.Root = root;
+            _eventOptions.Topic.Pattern = pattern;
+            return this;
+        }
+
+        public IEventMappingBuilder<TEvent> UseTopicPattern<TPatternType>(string root, Expression<Func<TPatternType, string>> patternExp)
+            where TPatternType : ITopicPattern<TEvent>
         {
             string pattern = ReflectionHelper.CreateTopicPattern(patternExp);
-            _eventOptions.TopicInfoType = typeof(TTopicInfo);
-            return UseTopicPattern(pattern);
+            _eventOptions.Topic.PatternType = typeof(TPatternType);
+
+            if (!string.IsNullOrWhiteSpace(root))
+            {
+                if (!pattern.StartsWith(root))
+                {
+                    root = root.TrimEnd('/');
+                    pattern = pattern.TrimStart('/');
+                    pattern = $"{root}/{pattern}";
+                }
+            }
+
+            return UseTopicPattern(root, pattern);
         }
     }
 }

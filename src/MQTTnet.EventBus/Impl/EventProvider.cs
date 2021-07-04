@@ -2,6 +2,7 @@
 using MQTTnet.EventBus.Logger;
 using MQTTnet.EventBus.Serializers;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -28,12 +29,12 @@ namespace MQTTnet.EventBus.Impl
             _eventNames = eventOptions.ToDictionary(p => p.EventType, p => p.EventName);
 
             _topicCreaters = eventOptions
-                    .Where(p => p.TopicInfoType != null && _topicPattenBuilder.IsPattern(p.TopicPattern))
-                    .ToDictionary(p => p.EventName, p => topicPattenBuilder.CreateTopicCreater(p.TopicInfoType, p.TopicPattern).Compile());
+                    .Where(p => p.Topic.PatternType != null && _topicPattenBuilder.IsPattern(p.Topic.Pattern))
+                    .ToDictionary(p => p.EventName, p => topicPattenBuilder.CreateTopicCreater(p.Topic.PatternType, p.Topic.Pattern).Compile());
 
             _topics = eventOptions
-                .Where(p => !_topicPattenBuilder.IsStaticTopic(p.TopicPattern))
-                .ToDictionary(p => p.EventName, p => p.TopicPattern);
+                .Where(p => !_topicPattenBuilder.IsStaticTopic(p.Topic.Pattern))
+                .ToDictionary(p => p.EventName, p => p.Topic.Pattern);
 
             _logger = logger;
         }
@@ -63,7 +64,7 @@ namespace MQTTnet.EventBus.Impl
         public bool HasTopicPattern(string eventName)
         {
             if (_eventOptions.TryGetValue(eventName, out var opions))
-                return !string.IsNullOrEmpty(opions.TopicPattern);
+                return !string.IsNullOrEmpty(opions.Topic.Pattern);
             return false;
         }
 
@@ -74,10 +75,10 @@ namespace MQTTnet.EventBus.Impl
         {
             if (_eventOptions.TryGetValue(eventName, out var opions))
             {
-                if (string.IsNullOrEmpty(opions.TopicPattern))
+                if (!opions.Topic.HasPattern)
                     return string.Empty;
 
-                return _topicPattenBuilder.GetTopicEntity(opions.TopicPattern, topic, name);
+                return _topicPattenBuilder.GetTopicEntity(opions.Topic.Pattern, topic, name);
             }
 
             return string.Empty;
@@ -89,10 +90,10 @@ namespace MQTTnet.EventBus.Impl
             {
                 if (_eventOptions.TryGetValue(eventName, out var opions))
                 {
-                    if (string.IsNullOrEmpty(opions.TopicPattern))
+                    if (!opions.Topic.HasPattern)
                         return false;
 
-                    _topicPattenBuilder.SetData(@event, opions.TopicPattern, topic);
+                    _topicPattenBuilder.SetData(@event, opions.Topic.Pattern, topic);
                     return true;
                 }
             }
@@ -118,6 +119,11 @@ namespace MQTTnet.EventBus.Impl
 
             throw new EventNotFoundException(eventName);
         }
+
+        public IEnumerator<EventOptions> GetEnumerator() =>
+            _eventOptions.Values.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         private class EventCreater
         {

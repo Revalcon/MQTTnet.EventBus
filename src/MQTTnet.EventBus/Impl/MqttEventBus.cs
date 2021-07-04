@@ -117,10 +117,10 @@ namespace MQTTnet.EventBus.Impl
 
         public async Task OnConnectionLostAsync(IMqttPersisterConnection connection, MqttClientConnectionEventArgs args)
         {
-            if (args.IsReConnected)
+            if (args != null && args.IsReConnected)
             {
                 if (args.DisconnectReason == Client.Disconnecting.MqttClientDisconnectReason.NormalDisconnection)
-                    await ReSubscribeAllTopicsAsync();
+                    await ReSubscribeAllAsync();
             }
         }
 
@@ -187,7 +187,7 @@ namespace MQTTnet.EventBus.Impl
             return null;
         }
 
-        public Task<MqttClientSubscribeResult[]> ReSubscribeAllTopicsAsync(CancellationToken cancellationToken = default)
+        public Task<MqttClientSubscribeResult[]> ReSubscribeAllAsync(CancellationToken cancellationToken = default)
         {
             var subscribers = _subsManager.AllTopics().Select(async topic =>
             {

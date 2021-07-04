@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace MQTTnet.EventBus
 {
-    public interface IEventProvider
+    public interface IEventProvider : IEnumerable<EventOptions>
     {
         bool TryGetEventName(Type eventType, out string eventName);
         bool HasTopicPattern(string eventName);
@@ -95,16 +99,30 @@ namespace MQTTnet.EventBus
         public static Type GetConsumerType<TEvent>(this IEventProvider eventProvider) => 
             eventProvider.GetConsumerType(typeof(TEvent));
 
-        public static SubscriptionInfo CreateSubscriptionInfo(this IEventProvider eventProvider, Type eventType, string topic) => 
+        public static SubscriptionInfo CreateSubscriptionInfo(this IEventProvider eventProvider, string eventName, Type eventType, string topic) =>
             new SubscriptionInfo
             {
                 Topic = topic,
-                EventName = eventType.Name,
+                EventName = eventName,
                 EventType = eventType,
                 ConsumerType = eventProvider.GetConsumerType(eventType)
             };
 
+        public static SubscriptionInfo CreateSubscriptionInfo(this IEventProvider eventProvider, Type eventType, string topic) =>
+            eventProvider.CreateSubscriptionInfo(eventType.Name, eventType, topic);
+
         public static SubscriptionInfo CreateSubscriptionInfo<TEvent>(this IEventProvider eventProvider, string topic) => 
             CreateSubscriptionInfo(eventProvider, typeof(TEvent), topic);
+
+        public static async IAsyncEnumerable<TResult> ExecuteForAllEventsAsync<TResult>(this IEventProvider eventProvider, Func<EventOptions, Task<TResult>> executer, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            foreach (var info in eventProvider)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                yield return await executer.Invoke(info);
+            }
+        }
     }
 }
