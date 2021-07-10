@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MQTTnet.EventBus.Exeptions;
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -8,19 +9,65 @@ namespace MQTTnet.EventBus
 {
     public interface IEventProvider : IEnumerable<EventOptions>
     {
-        bool TryGetEventName(Type eventType, out string eventName);
         bool HasTopicPattern(string eventName);
         bool TrySetTopicInfo(string eventName, object @event, string topic);
         string GetTopic(string eventName);
         string GetTopic(string eventName, object topicInfo);
         string GetTopicEntity(string eventName, string topic, string name);
-        Type GetConverterType(string eventName);
-        Type GetConsumerType(string eventName);
+        bool TryGetEventName(Type eventType, out string eventName);
+        bool TryGetEventOptions(string eventName, out EventOptions options);
         MqttApplicationMessage CreateMessage(string eventName, object @event, string topic);
     }
 
     public static class IEventProviderExtensions
     {
+        public static string GetEventName<TEvenet>(this IEventProvider eventProvider) =>
+            GetEventName(eventProvider, typeof(TEvenet));
+
+        public static string GetEventName(this IEventProvider eventProvider, Type eventType)
+        {
+            if (eventProvider.TryGetEventName(eventType, out string eventName))
+                return eventName;
+            throw new EventNotFoundException(eventType);
+        }
+
+        public static EventOptions GetEventOptions<TEvent>(this IEventProvider eventProvider) =>
+            GetEventOptions(eventProvider, typeof(TEvent));
+
+        public static EventOptions GetEventOptions(this IEventProvider eventProvider, Type eventType)
+        {
+            if (TryGetEventOptions(eventProvider, eventType, out var options))
+                return options;
+
+            throw new EventNotFoundException(eventType);
+        }
+
+        public static bool TryGetEventOptions<TEvent>(this IEventProvider eventProvider, out EventOptions options) =>
+            TryGetEventOptions(eventProvider, typeof(TEvent), out options);
+
+        public static bool TryGetEventOptions(this IEventProvider eventProvider, Type eventType, out EventOptions options)
+        {
+            if (eventProvider.TryGetEventName(eventType, out var eventname))
+                return eventProvider.TryGetEventOptions(eventname, out options);
+
+            options = null;
+            return false;
+        }
+
+        public static Type GetConsumerType(this IEventProvider eventProvider, string eventName)
+        {
+            if (eventProvider.TryGetEventOptions(eventName, out var options))
+                return options.ConsumerType;
+            return null;
+        }
+
+        public static Type GetConverterType(this IEventProvider eventProvider, string eventName)
+        {
+            if (eventProvider.TryGetEventOptions(eventName, out var options))
+                return options.ConverterType;
+            return null;
+        }
+
         public static string GetTopicEntity(this IEventProvider eventProvider, Type eventType, string topic, string name)
         {
             if (eventProvider.TryGetEventName(eventType, out string eventName))

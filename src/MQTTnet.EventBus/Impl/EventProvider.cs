@@ -105,20 +105,8 @@ namespace MQTTnet.EventBus.Impl
             return false;
         }
 
-        public Type GetConsumerType(string eventName)
-        {
-            if (_eventOptions.TryGetValue(eventName, out var options))
-                return options.ConsumerType;
-            return null;
-        }
-
-        public Type GetConverterType(string eventName)
-        {
-            if (_eventOptions.TryGetValue(eventName, out var option))
-                return option.ConverterType;
-
-            throw new EventNotFoundException(eventName);
-        }
+        public bool TryGetEventOptions(string eventName, out EventOptions options) =>
+            _eventOptions.TryGetValue(eventName, out options);
 
         public IEnumerator<EventOptions> GetEnumerator() =>
             _eventOptions.Values.GetEnumerator();

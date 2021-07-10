@@ -37,7 +37,13 @@ namespace MQTTnet.EventBus.ConfigurationApp
             //await eventBus.SubscribeAsync<StateChanged>("/state/#");
             //await eventBus.SubscribeAsync<StatusChanged>("/status/#");
 
-            await eventBus.SubscribeAllAsync();
+            //await eventBus.PublishAsync(new StateChanged { Value = 1 }, new StateChangedTopicInfo { Territory = "garni" });
+            //await eventBus.PublishAsync(new StatusChanged { Value = 1 }, new StatusChangedTopicInfo { Territory = "garni" });
+
+            await eventBus.SubscribeAsync<StateChanged>();
+            await eventBus.SubscribeAsync<StatusChanged>();
+
+            //await eventBus.SubscribeAllAsync();
 
             //await eventBus.SubscribeAsync<StateChanged>(new StateChangedTopicInfo { Territory = "garni", Server = "Server1" });
             //await eventBus.SubscribeAsync<StatusChanged>(new StatusChangedTopicInfo { Territory = "garni", Server = "Server1" });

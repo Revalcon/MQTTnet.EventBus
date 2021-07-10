@@ -31,22 +31,37 @@ namespace MQTTnet.EventBus
         //SubscribeAsync extensions
         public static Task<MqttClientSubscribeResult> SubscribeAsync(this IEventBus eventBus, string eventName, Type eventType, string topic, CancellationToken cancellationToken = default) =>
             eventBus.SubscribeAsync(StaticCache.EventProvider.CreateSubscriptionInfo(eventName, eventType, topic), cancellationToken);
-        public static Task<MqttClientSubscribeResult> SubscribeAsync(this IEventBus eventBus, Type eventType, string topic, CancellationToken cancellationToken = default) => 
-            SubscribeAsync(eventBus, eventType.Name, eventType, topic, cancellationToken);
+        public static Task<MqttClientSubscribeResult> SubscribeAsync(this IEventBus eventBus, Type eventType, string topic, CancellationToken cancellationToken = default) =>
+            SubscribeAsync(eventBus, StaticCache.EventProvider.GetEventName(eventType), eventType, topic, cancellationToken);
         public static Task<MqttClientSubscribeResult> SubscribeAsync<TEvent>(this IEventBus eventBus, string topic, CancellationToken cancellationToken = default) => 
             SubscribeAsync(eventBus, typeof(TEvent), topic, cancellationToken);
         public static Task<MqttClientSubscribeResult> SubscribeAsync<TEvent>(this IEventBus eventBus, ITopicPattern<TEvent> topicInfo, CancellationToken cancellationToken = default) => 
             SubscribeAsync<TEvent>(eventBus, StaticCache.EventProvider.GetTopic(topicInfo), cancellationToken);
+        public static Task<MqttClientSubscribeResult> SubscribeAsync(this IEventBus eventBus, Type eventType, CancellationToken cancellationToken = default)
+        {
+            var options = StaticCache.EventProvider.GetEventOptions(eventType);
+            return SubscribeAsync(eventBus, options.EventName, eventType, options.Topic.RootTopic, cancellationToken);
+        }
+        public static Task<MqttClientSubscribeResult> SubscribeAsync<TEvent>(this IEventBus eventBus, CancellationToken cancellationToken = default) =>
+            SubscribeAsync(eventBus, typeof(TEvent), cancellationToken);
 
         //UnsubscribeAsync extensions
         public static Task<MqttClientUnsubscribeResult> UnsubscribeAsync(this IEventBus eventBus, string eventName, Type eventType, string topic, CancellationToken cancellationToken = default) =>
             eventBus.UnsubscribeAsync(StaticCache.EventProvider.CreateSubscriptionInfo(eventName, eventType, topic), cancellationToken);
         public static Task<MqttClientUnsubscribeResult> UnsubscribeAsync(this IEventBus eventBus, Type eventType, string topic, CancellationToken cancellationToken = default) => 
-            UnsubscribeAsync(eventBus, eventType.Name, eventType, topic, cancellationToken);
+            UnsubscribeAsync(eventBus, StaticCache.EventProvider.GetEventName(eventType), eventType, topic, cancellationToken);
         public static Task<MqttClientUnsubscribeResult> UnsubscribeAsync<TEvent>(this IEventBus eventBus, string topic, CancellationToken cancellationToken = default) => 
             UnsubscribeAsync(eventBus, typeof(TEvent), topic, cancellationToken);
         public static Task<MqttClientUnsubscribeResult> UnsubscribeAsync<TEvent>(this IEventBus eventBus, ITopicPattern<TEvent> topicInfo, CancellationToken cancellationToken = default) => 
             UnsubscribeAsync<TEvent>(eventBus, StaticCache.EventProvider.GetTopic(topicInfo), cancellationToken);
+        public static Task<MqttClientUnsubscribeResult> UnsubscribeAsync(this IEventBus eventBus, Type eventType, CancellationToken cancellationToken = default)
+        {
+            var options = StaticCache.EventProvider.GetEventOptions(eventType);
+            return UnsubscribeAsync(eventBus, options.EventName, eventType, options.Topic.RootTopic, cancellationToken);
+        }
+        public static Task<MqttClientUnsubscribeResult> UnsubscribeAsync<TEvent>(this IEventBus eventBus, CancellationToken cancellationToken = default) =>
+            UnsubscribeAsync(eventBus, typeof(TEvent), cancellationToken);
+
 
         public static Task<List<MqttClientSubscribeResult>> SubscribeAllAsync(this IEventBus eventBus, CancellationToken cancellationToken = default) =>
             StaticCache.EventProvider
