@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 var eventOptions = eventBuilder.Build();
                 foreach (var o in eventOptions)
                 {
-                    if (!o.ConsumerType.IsInterface)
+                    if (o.ConsumerType != null && !o.ConsumerType.IsInterface)
                         services.AddScoped(o.ConsumerType);
 
                     if (!o.ConverterType.IsInterface)
