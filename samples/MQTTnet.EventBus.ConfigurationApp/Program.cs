@@ -18,7 +18,14 @@ namespace MQTTnet.EventBus.ConfigurationApp
             //    .WithClientOptions(options)
             //    .Build();
 
-            Configure();
+            try
+            {
+                Configure();
+            }
+            catch (Exception ex)
+            {
+
+            }
 
             var eventBus = _provider.GetService<IEventBus>();
             //await eventBus.PublishAsync(new StatusChanged { Value = 1 }, new StatusChangedTopicInfo { Territory = "garni" });
@@ -83,11 +90,18 @@ namespace MQTTnet.EventBus.ConfigurationApp
                     //    cfg.AddConsumer<SysConsumer>();
                     //    cfg.UseConverter<SysConverter>();
                     //});
+                    eventBuilder.AddEventMapping<ChangeNodeState>(cfg =>
+                    {
+                        cfg.UseConverter<ChangeNodeStateConverter>();
+                        cfg.UseTopicPattern<ChangeNodeStateTopicEntity>(root: "/field",
+                            ev => $"{ev.Territory}/{ev.Server}");
+                        cfg.UseMessageBuilder(mb => mb.WithQualityOfServiceLevel(0));
+                    });
 
                     eventBuilder.AddEventMapping<StatusChanged>(cfg =>
                     {
                         cfg.AddConsumer<StatusChangedConsumer>();
-                        cfg.UseConverter<StatusChangedConverter>();
+                        //cfg.UseConverter<StatusChangedConverter>();
                         cfg.UseTopicPattern<StatusChangedTopicInfo>(root: "/status", ev => $"/status/{ev.Territory}/{ev.Server}");
                         cfg.UseMessageBuilder(mb => mb.WithAtLeastOnceQoS());
                     });
