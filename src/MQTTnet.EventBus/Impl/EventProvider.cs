@@ -1,4 +1,4 @@
-﻿using MQTTnet.EventBus.Exeptions;
+﻿using MQTTnet.EventBus.Exceptions;
 using MQTTnet.EventBus.Logger;
 using MQTTnet.EventBus.Serializers;
 using System;
@@ -44,7 +44,11 @@ namespace MQTTnet.EventBus.Impl
             if (_eventCreaters.TryGetValue(eventName, out var eventCreater))
                 return eventCreater.CreateMqttApplicationMessage(@event, topic);
 
-            throw new EventNotFoundException(eventName);
+            Type eventType = null;
+            if (TryGetEventOptions(eventName, out var options))
+                eventType = options.EventType;
+
+            throw new EventNotFoundException(eventName, eventType);
         }
 
         public string GetTopic(string eventName)

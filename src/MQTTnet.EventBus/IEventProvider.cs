@@ -1,4 +1,4 @@
-﻿using MQTTnet.EventBus.Exeptions;
+﻿using MQTTnet.EventBus.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -28,7 +28,7 @@ namespace MQTTnet.EventBus
         {
             if (eventProvider.TryGetEventName(eventType, out string eventName))
                 return eventName;
-            throw new EventNotFoundException(eventType);
+            throw new EventNotFoundException(eventName, eventType);
         }
 
         public static EventOptions GetEventOptions<TEvent>(this IEventProvider eventProvider) =>
@@ -39,7 +39,7 @@ namespace MQTTnet.EventBus
             if (TryGetEventOptions(eventProvider, eventType, out var options))
                 return options;
 
-            throw new EventNotFoundException(eventType);
+            throw new EventNotFoundException(eventType.Name, eventType);
         }
 
         public static bool TryGetEventOptions<TEvent>(this IEventProvider eventProvider, out EventOptions options) =>

@@ -2,6 +2,7 @@
 using MQTTnet.EventBus;
 using MQTTnet.EventBus.DependencyInjection.Builder;
 using MQTTnet.EventBus.DependencyInjection.Builder.Impl;
+using MQTTnet.EventBus.Exceptions;
 using MQTTnet.EventBus.Impl;
 using MQTTnet.EventBus.Logger;
 using MQTTnet.EventBus.Reflection;
@@ -22,8 +23,12 @@ namespace Microsoft.Extensions.DependencyInjection
                 var eventOptions = eventBuilder.Build();
                 foreach (var o in eventOptions)
                 {
-                    if (!o.ConsumerType.IsInterface)
+                    if (o.ConsumerType != null && !o.ConsumerType.IsInterface)
                         services.AddScoped(o.ConsumerType);
+
+                    if (o.ConverterType == null)
+                        throw new EventConfigurationException(o.EventName, o.EventType, 
+                            $"Converter for '{o.EventName}' event not configured, this configuration is necessary.");
 
                     if (!o.ConverterType.IsInterface)
                         services.AddScoped(o.ConverterType);
