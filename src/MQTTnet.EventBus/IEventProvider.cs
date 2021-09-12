@@ -1,6 +1,7 @@
 ﻿using MQTTnet.EventBus.Exceptions;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -163,7 +164,7 @@ namespace MQTTnet.EventBus
 
         public static async IAsyncEnumerable<TResult> ExecuteForAllEventsAsync<TResult>(this IEventProvider eventProvider, Func<EventOptions, Task<TResult>> executer, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            foreach (var info in eventProvider)
+            foreach (var info in eventProvider.Where(p => p.ConsumerType != null))
             {
                 if (cancellationToken.IsCancellationRequested)
                     cancellationToken.ThrowIfCancellationRequested();
